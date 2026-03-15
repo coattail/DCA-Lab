@@ -88,7 +88,7 @@ const DEFAULTS = {
   preset: "20",
 };
 
-const DATA_CACHE_BUSTER = "20260315-v33";
+const DATA_CACHE_BUSTER = "20260316-v34";
 
 const DRAWDOWN_CAUSE_RULES = [
   { start: "2007-07-01", end: "2009-06-30", label: "次贷危机、雷曼冲击与全球金融危机" },
@@ -1574,7 +1574,7 @@ function renderChart(run) {
   const width = Math.max(dom.chartSurface.clientWidth || 980, 320);
   const compactChart = width < 720;
   const viewportHeight = Math.max(window.innerHeight || 0, 720);
-  const labelReserve = visibleAssetResults.length ? (width < 860 ? 78 : 128) : 0;
+  const labelReserve = visibleAssetResults.length ? (width < 860 ? 58 : 96) : 0;
   const naturalHeight = compactChart
     ? clamp(Math.round(Math.min(width * 0.66, viewportHeight * 0.46)), 360, 520)
     : clamp(Math.round(Math.min(width * 0.52, viewportHeight * 0.56)), 460, 760);
@@ -2012,8 +2012,8 @@ function buildChartEndLabels(assetPaths, { width, top, bottom, plotRight }) {
 
   return rawLabels.map((label) => ({
     ...label,
-    lineEndX: plotRight + 10,
-    textX: plotRight + 16,
+    lineEndX: plotRight + 8,
+    textX: plotRight + 12,
   }));
 }
 
