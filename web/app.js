@@ -88,23 +88,113 @@ const DEFAULTS = {
   preset: "20",
 };
 
-const DATA_CACHE_BUSTER = "20260316-v35";
+const DATA_CACHE_BUSTER = "20260316-v36";
 
 const DRAWDOWN_CAUSE_RULES = [
-  { start: "2007-07-01", end: "2009-06-30", label: "次贷危机、雷曼冲击与全球金融危机" },
-  { start: "2011-07-01", end: "2011-12-31", label: "欧债危机与美国主权评级下调" },
-  { start: "2015-08-01", end: "2016-03-31", label: "中国增长放缓、人民币波动与油价暴跌" },
-  { start: "2018-10-01", end: "2019-01-31", label: "美联储加息缩表与贸易摩擦升温" },
-  { start: "2020-02-01", end: "2020-05-31", label: "新冠疫情冲击与流动性恐慌" },
-  { start: "2022-01-01", end: "2022-12-31", label: "高通胀、美联储激进加息与估值压缩" },
-  { start: "2023-03-01", end: "2023-05-31", label: "区域银行压力与利率预期剧烈波动" },
-  { start: "2024-07-01", end: "2025-02-12", label: "长端利率走高、增长预期反复与科技股高位波动" },
+  { start: "1987-08-01", end: "1987-12-31", label: "黑色星期一、程序化交易放大抛压与高估值回吐" },
+  { start: "1990-07-01", end: "1991-03-31", label: "海湾战争推升油价、美国衰退担忧与风险资产回撤" },
+  { start: "1997-07-01", end: "1998-10-31", label: "亚洲金融危机、俄罗斯违约与 LTCM 危机冲击全球风险偏好" },
+  { start: "2000-03-01", end: "2002-10-31", label: "互联网泡沫破裂、盈利下修、美国衰退与 9·11 冲击" },
+  { start: "2007-07-01", end: "2009-06-30", label: "次贷链条断裂、雷曼倒闭、信用市场冻结与全球金融危机" },
+  { start: "2010-04-01", end: "2010-07-31", label: "希腊债务危机升级、欧洲银行压力与美国闪电崩盘扰动" },
+  { start: "2011-07-01", end: "2011-12-31", label: "欧债危机恶化、美国主权评级下调与全球增长担忧" },
+  { start: "2015-08-01", end: "2016-02-29", label: "中国汇改与增长担忧升温、原油暴跌、美联储首次加息" },
+  { start: "2018-10-01", end: "2018-12-31", label: "美联储继续加息缩表、中美贸易摩擦升级与盈利预期下修" },
+  { start: "2020-02-01", end: "2020-05-31", label: "疫情全球大流行、封锁冲击增长，叠加流动性挤兑" },
+  { start: "2022-01-01", end: "2022-12-31", label: "俄乌战争推升能源与通胀，美联储激进加息压缩估值" },
+  { start: "2023-03-01", end: "2023-05-31", label: "SVB、Signature 与 First Republic 风波触发银行体系与信用收缩担忧" },
+  { start: "2024-07-01", end: "2024-08-31", label: "美国增长放缓恐慌、日银加息引发套息交易逆转，拥挤交易回吐" },
+  { start: "2024-09-01", end: "2025-02-12", label: "长端利率上行、增长与盈利预期反复，关税预期开始扰动风险偏好" },
   {
     start: "2025-02-13",
     end: "2025-04-30",
     label: "对等关税预期升温，4 月 2 日对等关税落地并引发反制，贸易战与衰退担忧升温",
   },
-  { start: "2025-05-01", end: "2026-12-31", label: "关税谈判反复、长端利率扰动与增长预期摇摆" },
+  { start: "2025-05-01", end: "2026-12-31", label: "关税谈判反复、财政与长端利率扰动、增长前景摇摆" },
+  {
+    assets: ["hs300"],
+    start: "2007-10-01",
+    end: "2008-11-30",
+    label: "A 股泡沫破裂、大小非减持压力抬升，叠加全球金融危机冲击",
+  },
+  {
+    assets: ["hs300"],
+    start: "2009-08-01",
+    end: "2010-07-31",
+    label: "刺激退坡、地产调控收紧与银行再融资压力压制权重股",
+  },
+  {
+    assets: ["hs300"],
+    start: "2011-04-01",
+    end: "2012-12-31",
+    label: "紧缩后增长放缓、欧债危机拖累外需，周期与金融板块承压",
+  },
+  {
+    assets: ["hs300"],
+    start: "2015-06-01",
+    end: "2016-02-29",
+    label: "场内外配资去杠杆、股灾救市反复、人民币贬值与熔断冲击",
+  },
+  {
+    assets: ["hs300"],
+    start: "2018-01-01",
+    end: "2019-01-31",
+    label: "金融去杠杆、民企信用收缩与中美贸易摩擦压制风险偏好",
+  },
+  {
+    assets: ["hs300"],
+    start: "2021-02-01",
+    end: "2022-11-30",
+    label: "平台监管、房地产去杠杆、疫情封控与内需偏弱拖累核心资产",
+  },
+  {
+    assets: ["hs300"],
+    start: "2023-01-01",
+    end: "2024-02-29",
+    label: "地产链下行、通缩预期与外资流出，政策预期屡次落空",
+  },
+  {
+    assets: ["hs300"],
+    start: "2024-10-01",
+    end: "2025-02-28",
+    label: "政策博弈加剧，地产与内需修复偏慢，盈利预期仍弱",
+  },
+  {
+    assets: ["nikkei225"],
+    start: "1990-01-01",
+    end: "1992-08-31",
+    label: "日银紧缩刺破资产泡沫，地产与银行不良贷款问题集中暴露",
+  },
+  {
+    assets: ["nikkei225"],
+    start: "1997-07-01",
+    end: "1998-10-31",
+    label: "亚洲金融危机、日本银行业危机与山一证券等机构倒闭",
+  },
+  {
+    assets: ["nikkei225"],
+    start: "2000-04-01",
+    end: "2003-04-30",
+    label: "全球科技泡沫破裂、日本通缩延续与银行不良资产出清",
+  },
+  {
+    assets: ["nikkei225"],
+    start: "2008-09-01",
+    end: "2009-03-31",
+    label: "雷曼危机、全球贸易塌陷与日元急升重创出口板块",
+  },
+  {
+    assets: ["nikkei225"],
+    start: "2011-03-01",
+    end: "2011-05-31",
+    label: "东日本大地震、核事故与供应链中断打击日本风险资产",
+  },
+  {
+    assets: ["nikkei225"],
+    start: "2024-07-01",
+    end: "2024-08-31",
+    label: "日银退出超宽松并加息、日元套利交易逆转，叠加美国衰退恐慌",
+  },
 ];
 
 const formatters = {
@@ -1553,7 +1643,7 @@ function renderDrawdownEvents(run) {
                           `峰谷历时 ${event.peakToTroughTradingDays} 个交易日 · ${recoveryText}`,
                         )}
                       </p>
-                      <p class="drawdown-cause">${escapeHtml(`市场背景：${inferDrawdownCause(event)}`)}</p>
+                      <p class="drawdown-cause">${escapeHtml(`市场背景：${inferDrawdownCause(event, result.assetId)}`)}</p>
                     </div>
                   </div>
                 `;
@@ -2185,22 +2275,34 @@ function formatPercent(value) {
   return `${round(value, Math.abs(value) >= 100 ? 1 : 2)}%`;
 }
 
-function inferDrawdownCause(event) {
+function inferDrawdownCause(event, assetId) {
   if (!event?.peakDateKey && !event?.troughDateKey) {
-    return "增长预期、利率路径与风险偏好回落共振";
+    return "流动性、政策预期与风险偏好同步转弱";
   }
 
   const eventStart = event.peakDateKey || event.troughDateKey;
   const eventEnd = event.troughDateKey || event.peakDateKey;
-  const matchedRule = DRAWDOWN_CAUSE_RULES.find(
-    (rule) => dateRangesOverlap(eventStart, eventEnd, rule.start, rule.end),
-  );
+  const matchedRule = DRAWDOWN_CAUSE_RULES
+    .filter((rule) => {
+      const assetMatched = !rule.assets || rule.assets.includes(assetId);
+      return assetMatched && dateRangesOverlap(eventStart, eventEnd, rule.start, rule.end);
+    })
+    .sort((left, right) => {
+      const leftSpecific = left.assets ? 1 : 0;
+      const rightSpecific = right.assets ? 1 : 0;
+      if (leftSpecific !== rightSpecific) return rightSpecific - leftSpecific;
+      return dateRangeLength(left.start, left.end) - dateRangeLength(right.start, right.end);
+    })[0];
 
-  return matchedRule ? matchedRule.label : "增长预期、利率路径与风险偏好回落共振";
+  return matchedRule ? matchedRule.label : "估值回吐、政策预期转弱与流动性扰动共振";
 }
 
 function dateRangesOverlap(startA, endA, startB, endB) {
   return startA <= endB && endA >= startB;
+}
+
+function dateRangeLength(startDateKey, endDateKey) {
+  return Math.abs(parseUtcDate(endDateKey).getTime() - parseUtcDate(startDateKey).getTime());
 }
 
 function formatCompactMoney(value) {
