@@ -38,13 +38,16 @@ NIKKEI_NEWSROOM_ENDPOINT = "https://indexes.nikkei.co.jp/en/nkave/newsroom"
 NIKKEI_TOTAL_RETURN_DAILY_CSV = "https://indexes.nikkei.co.jp/en/nkave/historical/nikkei_225_total_return_index_daily_en.csv"
 NIKKEI_TOTAL_RETURN_MONTHLY_CSV = "https://indexes.nikkei.co.jp/en/nkave/historical/nikkei_225_total_return_index_monthly_en.csv"
 
-NIKKEI_START_YEAR = 1985
+NIKKEI_START_YEAR = 1979
+NIKKEI_START_MONTH = 12
 NIKKEI_MAX_WORKERS = 12
 NIKKEI_REQUEST_TIMEOUT = 45
 NIKKEI_INCREMENTAL_LOOKBACK_MONTHS = 4
 NIKKEI_MONTHLY_REPORT_START_YEAR = 2012
 NIKKEI_MONTHLY_REPORT_END_YEAR = 2015
 NIKKEI_MONTHLY_REPORT_CACHE = CACHE_DIR / "nikkei225-total-return-report-anchors.csv"
+NIKKEI_TOTAL_RETURN_BASE_DATE = "1979-12-28"
+NIKKEI_TOTAL_RETURN_BASE_VALUE = 6569.47
 HS300_TOTAL_RETURN_START = "2005-04-08"
 
 _NIKKEI_THREAD_LOCAL = threading.local()
@@ -82,6 +85,10 @@ def normalize_date_key(value: str) -> str:
     raise ValueError(f"Unsupported date format: {value}")
 
 
+def format_csindex_date(value: str) -> str:
+    return normalize_date_key(value).replace("-", "")
+
+
 def parse_nikkei_date(value: str) -> str:
     return datetime.strptime(value, "%b/%d/%Y").date().isoformat()
 
@@ -89,6 +96,13 @@ def parse_nikkei_date(value: str) -> str:
 def month_shift(year: int, month: int, delta: int) -> tuple[int, int]:
     ordinal = year * 12 + (month - 1) + delta
     return ordinal // 12, ordinal % 12 + 1
+
+
+def iter_months(start_year: int, start_month: int, end_year: int, end_month: int):
+    year, month = start_year, start_month
+    while (year, month) <= (end_year, end_month):
+        yield year, month
+        year, month = month_shift(year, month, 1)
 
 
 def read_existing_csv_rows(path: Path) -> list[tuple[str, float]]:
@@ -134,7 +148,12 @@ def fetch_csindex_total_return(index_code: str, start_date: str, end_date: str) 
     session = make_requests_session()
     response = session.get(
         CSINDEX_ENDPOINT,
-        params={"indexCode": index_code, "startDate": start_date, "endDate": end_date, "cycle": "day"},
+        params={
+            "indexCode": index_code,
+            "startDate": format_csindex_date(start_date),
+            "endDate": format_csindex_date(end_date),
+            "cycle": "day",
+        },
         headers={"Referer": f"https://www.csindex.com.cn/zh-CN/indices/index-detail/{index_code}"},
         timeout=60,
     )
@@ -182,27 +201,41 @@ def fetch_eastmoney_index(index_code: str, market: str) -> list[tuple[str, float
 
 def fetch_nikkei_price_history() -> list[tuple[str, float]]:
     today = date.today()
+    target_start = date(NIKKEI_START_YEAR, NIKKEI_START_MONTH, 1)
     existing_rows = read_existing_csv_rows(DATA_DIR / "nikkei225.csv")
 
     preserved_rows: list[tuple[str, float]] = []
-    if existing_rows:
-        latest_date = datetime.strptime(existing_rows[-1][0], "%Y-%m-%d").date()
-        start_year, start_month = month_shift(latest_date.year, latest_date.month, -(NIKKEI_INCREMENTAL_LOOKBACK_MONTHS - 1))
-        refetch_start = date(start_year, start_month, 1)
-        preserved_rows = [row for row in existing_rows if row[0] < refetch_start.isoformat()]
-    else:
-        start_year, start_month = NIKKEI_START_YEAR, 1
-
     tasks: list[tuple[int, int]] = []
-    for year in range(start_year, today.year + 1):
-        month_from = start_month if year == start_year else 1
-        month_to = today.month if year == today.year else 12
-        for month in range(month_from, month_to + 1):
+    if existing_rows:
+        earliest_date = datetime.strptime(existing_rows[0][0], "%Y-%m-%d").date()
+        latest_date = datetime.strptime(existing_rows[-1][0], "%Y-%m-%d").date()
+        head_preserve_start = earliest_date.replace(day=1)
+        if earliest_date > target_start:
+            for year, month in iter_months(NIKKEI_START_YEAR, NIKKEI_START_MONTH, earliest_date.year, earliest_date.month):
+                tasks.append((year, month))
+            next_year, next_month = month_shift(earliest_date.year, earliest_date.month, 1)
+            head_preserve_start = date(next_year, next_month, 1)
+
+        start_year, start_month = month_shift(
+            latest_date.year,
+            latest_date.month,
+            -(NIKKEI_INCREMENTAL_LOOKBACK_MONTHS - 1),
+        )
+        refetch_start = date(start_year, start_month, 1)
+        preserved_rows = [
+            row
+            for row in existing_rows
+            if head_preserve_start.isoformat() <= row[0] < refetch_start.isoformat()
+        ]
+        for year, month in iter_months(start_year, start_month, today.year, today.month):
+            tasks.append((year, month))
+    else:
+        for year, month in iter_months(NIKKEI_START_YEAR, NIKKEI_START_MONTH, today.year, today.month):
             tasks.append((year, month))
 
     rows = preserved_rows[:]
     with ThreadPoolExecutor(max_workers=NIKKEI_MAX_WORKERS) as executor:
-        for month_rows in executor.map(fetch_nikkei_month_history, tasks):
+        for month_rows in executor.map(fetch_nikkei_month_history, sorted(set(tasks))):
             rows.extend(month_rows)
 
     rows.sort(key=lambda item: item[0])
@@ -375,13 +408,21 @@ def build_nikkei_total_return_history(price_rows: list[tuple[str, float]]) -> li
 
     daily_start = daily_rows[0][0]
     price_map = {date_key: close for date_key, close in price_rows}
-    anchor_rows = report_anchors + [row for row in monthly_anchors if row[0] < daily_start] + [daily_rows[0]]
-    anchor_rows.sort(key=lambda item: item[0])
+    anchor_rows = [
+        (NIKKEI_TOTAL_RETURN_BASE_DATE, NIKKEI_TOTAL_RETURN_BASE_VALUE),
+        *report_anchors,
+        *[row for row in monthly_anchors if row[0] < daily_start],
+        daily_rows[0],
+    ]
+    merged_anchor_rows: dict[str, float] = {}
+    for date_key, close in anchor_rows:
+        merged_anchor_rows[date_key] = close
+    ordered_anchors = sorted(merged_anchor_rows.items(), key=lambda item: item[0])
 
     synthesized = []
-    for index in range(len(anchor_rows) - 1):
-        start_date, start_value = anchor_rows[index]
-        end_date, end_value = anchor_rows[index + 1]
+    for index in range(len(ordered_anchors) - 1):
+        start_date, start_value = ordered_anchors[index]
+        end_date, end_value = ordered_anchors[index + 1]
         segment = [row for row in price_rows if start_date <= row[0] <= end_date]
         if not segment:
             continue
@@ -486,7 +527,10 @@ def main() -> int:
     print("HS300 price source: Eastmoney historical kline for 000300")
     print("HS300 total return source: CSI official H00300 history")
     print("Nikkei 225 price source: Nikkei official historical data page")
-    print("Nikkei 225 total return source: Nikkei official daily CSV + monthly CSV + official monthly report anchors")
+    print(
+        "Nikkei 225 total return source: Nikkei official daily CSV + monthly CSV + official monthly report anchors + "
+        "pre-2012 calibrated backfill from official price history"
+    )
     print("FX sources: FRED DEXCHUS and DEXJPUS")
     return 0
 

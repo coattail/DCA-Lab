@@ -54,12 +54,13 @@ const ASSETS = {
     priceSource: "./data/nikkei225.csv",
     totalReturnSource: "./data/nikkei225-total-return.csv",
     priceLabel: "日经官方历史页本地化",
-    totalReturnLabel: "日经官方日频+月频+月报锚点混合本地化",
+    totalReturnLabel: "日经官方日频+月频+月报锚点+早期回算本地化",
     totalReturnSymbol: "NK225TR",
     currency: "JPY",
     fxPair: "usdjpy",
-    totalReturnCoverageStart: "2012-12-03",
-    totalReturnApproximateUntil: "2023-01-03",
+    totalReturnCoverageStart: "1979-12-28",
+    totalReturnInferredUntil: "2012-12-02",
+    totalReturnHybridUntil: "2023-01-03",
   },
 };
 
@@ -82,12 +83,12 @@ const DEFAULTS = {
   selectedAssets: ["sp500", "nasdaq100"],
   returnMode: "total",
   frequency: "monthly",
-  sampling: "monthly",
+  sampling: "weekly",
   amount: 500,
   preset: "20",
 };
 
-const DATA_CACHE_BUSTER = "20260315-v28";
+const DATA_CACHE_BUSTER = "20260315-v33";
 
 const DRAWDOWN_CAUSE_RULES = [
   { start: "2007-07-01", end: "2009-06-30", label: "次贷危机、雷曼冲击与全球金融危机" },
@@ -207,7 +208,6 @@ function cacheDom() {
   dom.drawdownEvents = document.querySelector("#drawdown-events");
   dom.returnSegments = document.querySelectorAll('[data-group="return-mode"] .segment');
   dom.frequencySegments = document.querySelectorAll('[data-group="frequency"] .segment');
-  dom.samplingSegments = document.querySelectorAll('[data-group="sampling"] .segment');
   dom.presetButtons = document.querySelectorAll(".preset-button");
   dom.quickAmountButtons = document.querySelectorAll(".quick-amount");
 }
@@ -229,14 +229,6 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.ui.frequency = button.dataset.value;
       setActiveButtons(dom.frequencySegments, state.ui.frequency);
-      rerunBacktest();
-    });
-  }
-
-  for (const button of dom.samplingSegments) {
-    button.addEventListener("click", () => {
-      state.ui.sampling = button.dataset.value;
-      setActiveButtons(dom.samplingSegments, state.ui.sampling);
       rerunBacktest();
     });
   }
@@ -285,7 +277,6 @@ function applyInitialUiState() {
   dom.amountInput.value = String(state.ui.amount);
   setActiveButtons(dom.returnSegments, state.ui.returnMode);
   setActiveButtons(dom.frequencySegments, state.ui.frequency);
-  setActiveButtons(dom.samplingSegments, state.ui.sampling);
   setActivePreset(state.ui.preset);
   syncQuickAmounts();
 }
@@ -605,7 +596,7 @@ function buildRunNotices(selectedAssets, requestedMode, effectiveMode, priceTime
 
       if (priceStart && totalStart && totalStart > priceStart) {
         notices.push(
-          `${ASSETS[assetId].name} 全收益当前接入的官方日频历史覆盖自 ${formatDateCompact(totalStart)} 起，因此全收益模式下可选区间会自动收窄。`,
+          `${ASSETS[assetId].name} 全收益当前接入覆盖自 ${formatDateCompact(totalStart)} 起，因此全收益模式下可选区间会自动收窄。`,
         );
       }
 
@@ -615,19 +606,29 @@ function buildRunNotices(selectedAssets, requestedMode, effectiveMode, priceTime
         );
       }
 
-      if (ASSETS[assetId].totalReturnApproximateUntil) {
+      if (assetId === "nikkei225") {
+        notices.push(
+          `日经225在 ${formatDateCompact(totalStart)} 至 ${formatDateCompact(
+            ASSETS[assetId].totalReturnInferredUntil,
+          )} 区间，使用日经官方价格日线，并以官方说明书给出的 ${formatDateCompact(
+            ASSETS[assetId].totalReturnCoverageStart,
+          )} 基点 6,569.47 和 ${formatDateCompact(
+            incrementDateKey(ASSETS[assetId].totalReturnInferredUntil, 1),
+          )} 官方 TR 锚点 13,440.95 校准回算日频全收益；${formatDateCompact(
+            incrementDateKey(ASSETS[assetId].totalReturnInferredUntil, 1),
+          )} 至 ${formatDateCompact(
+            ASSETS[assetId].totalReturnHybridUntil,
+          )} 使用官方月频、官方月报锚点与官方价格日线插值；${formatDateCompact(
+            dailyStartForAsset(assetId) || totalStart,
+          )} 起使用官方日频全收益。`,
+        );
+      } else if (ASSETS[assetId].totalReturnApproximateUntil) {
         notices.push(
           `${ASSETS[assetId].name} 在 ${formatDateCompact(totalStart)} 至 ${formatDateCompact(
             ASSETS[assetId].totalReturnApproximateUntil,
           )} 区间，使用官方月频/官方月报锚点与官方价格日线插值生成日频全收益；${formatDateCompact(
             dailyStartForAsset(assetId) || totalStart,
           )} 起使用官方日频全收益。`,
-        );
-      }
-
-      if (assetId === "nikkei225") {
-        notices.push(
-          "日经225全收益已尽量前补至 2012/12/03；官方资料虽说明该指数可回溯计算至 1979 年末，但公开站点免费文件仅提供 3 年日频与 10 年月频，因此更早公开明细暂无法继续前补。",
         );
       }
     }
@@ -1573,13 +1574,18 @@ function renderChart(run) {
   const width = Math.max(dom.chartSurface.clientWidth || 980, 320);
   const compactChart = width < 720;
   const viewportHeight = Math.max(window.innerHeight || 0, 720);
+  const labelReserve = visibleAssetResults.length ? (width < 860 ? 78 : 128) : 0;
   const naturalHeight = compactChart
     ? clamp(Math.round(Math.min(width * 0.66, viewportHeight * 0.46)), 360, 520)
     : clamp(Math.round(Math.min(width * 0.52, viewportHeight * 0.56)), 460, 760);
   const height = naturalHeight;
-  const padding = compactChart ? { top: 24, right: 18, bottom: 52, left: 62 } : { top: 30, right: 24, bottom: 62, left: 82 };
+  const padding = compactChart
+    ? { top: 24, right: 18 + labelReserve, bottom: 52, left: 62 }
+    : { top: 30, right: 24 + labelReserve, bottom: 62, left: 82 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
+  const plotRight = padding.left + plotWidth;
+  const hoverWidth = width - padding.left;
 
   const allSeries = [
     visiblePrincipal.map((point) => point.invested),
@@ -1664,6 +1670,43 @@ function renderChart(run) {
     )
     .join("");
 
+  const endLabels = buildChartEndLabels(assetPaths, {
+    width,
+    top: padding.top,
+    bottom: padding.top + plotHeight,
+    plotRight: padding.left + plotWidth,
+  });
+  const endLabelMarkup = endLabels
+    .map(
+      (label) => `
+        <g class="chart-end-label">
+          <line
+            class="chart-end-label__line"
+            x1="${round(label.anchorX, 2)}"
+            x2="${round(label.lineEndX, 2)}"
+            y1="${round(label.anchorY, 2)}"
+            y2="${round(label.labelY, 2)}"
+            stroke="${escapeHtml(label.color)}"
+          ></line>
+          <circle
+            class="chart-end-label__dot"
+            cx="${round(label.anchorX, 2)}"
+            cy="${round(label.anchorY, 2)}"
+            r="3.5"
+            fill="${escapeHtml(label.color)}"
+          ></circle>
+          <text
+            class="chart-end-label__text"
+            x="${round(label.textX, 2)}"
+            y="${round(label.labelY + 4, 2)}"
+            fill="${escapeHtml(label.color)}"
+            text-anchor="start"
+          >${escapeHtml(label.text)}</text>
+        </g>
+      `,
+    )
+    .join("");
+
   dom.chartSurface.innerHTML = `
     <svg class="chart-svg" viewBox="0 0 ${width} ${height}" style="height:${height}px" role="img" aria-label="指数定投资产曲线">
       <defs>${defs}</defs>
@@ -1675,10 +1718,11 @@ function renderChart(run) {
       }"></line>
       <path class="principal-line" d="${escapeHtml(principalPath)}"></path>
       ${assetMarkup}
+      ${endLabelMarkup}
       <g id="chart-focus" hidden>
         <line class="chart-focus-line" x1="0" x2="0" y1="${padding.top}" y2="${padding.top + plotHeight}"></line>
       </g>
-      <rect class="chart-overlay" x="${padding.left}" y="${padding.top}" width="${plotWidth}" height="${plotHeight}"></rect>
+      <rect class="chart-overlay" x="${padding.left}" y="${padding.top}" width="${hoverWidth}" height="${plotHeight}"></rect>
     </svg>
   `;
 
@@ -1707,11 +1751,12 @@ function renderChart(run) {
 
   focusGroup.insertAdjacentHTML("beforeend", focusDotsMarkup);
 
-  overlay.addEventListener("mousemove", (event) => {
+  const handlePointerMove = (event) => {
     const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
     const ratioX = width / rect.width;
     const pointerX = (event.clientX - rect.left) * ratioX;
-    const clampedX = Math.min(Math.max(pointerX, padding.left), padding.left + plotWidth);
+    const clampedX = Math.min(Math.max(pointerX, padding.left), plotRight);
     const targetMs = xMin + ((clampedX - padding.left) / plotWidth) * (xMax - xMin);
     const nearest = findNearestLookupPoint(lookup, targetMs);
     if (!nearest) return;
@@ -1729,12 +1774,17 @@ function renderChart(run) {
     }
 
     renderTooltip(event, nearest, run);
-  });
+  };
 
-  overlay.addEventListener("mouseleave", () => {
+  const clearPointerFocus = () => {
     focusGroup.hidden = true;
     dom.chartTooltip.hidden = true;
-  });
+  };
+
+  overlay.onpointermove = handlePointerMove;
+  overlay.onpointerleave = clearPointerFocus;
+  dom.chartShell.onpointermove = handlePointerMove;
+  dom.chartShell.onpointerleave = clearPointerFocus;
 }
 
 function getVisibleWindow(run) {
@@ -1920,6 +1970,53 @@ function areaPath(points, baselineY) {
   return `${head} ${body} ${tail}`;
 }
 
+function buildChartEndLabels(assetPaths, { width, top, bottom, plotRight }) {
+  const rawLabels = assetPaths
+    .map(({ result, linePoints }) => {
+      const anchor = linePoints[linePoints.length - 1];
+      if (!anchor) return null;
+      return {
+        assetId: result.assetId,
+        color: result.asset.color,
+        text: width < 860 ? result.asset.short : result.asset.name,
+        anchorX: anchor.x,
+        anchorY: anchor.y,
+        labelY: anchor.y,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.labelY - right.labelY);
+
+  if (!rawLabels.length) return [];
+
+  const minGap = width < 860 ? 16 : 20;
+  const topBound = top + 12;
+  const bottomBound = bottom - 12;
+
+  rawLabels[0].labelY = clamp(rawLabels[0].labelY, topBound, bottomBound);
+  for (let index = 1; index < rawLabels.length; index += 1) {
+    rawLabels[index].labelY = Math.max(rawLabels[index].labelY, rawLabels[index - 1].labelY + minGap);
+  }
+
+  const overflow = rawLabels[rawLabels.length - 1].labelY - bottomBound;
+  if (overflow > 0) {
+    rawLabels[rawLabels.length - 1].labelY -= overflow;
+    for (let index = rawLabels.length - 2; index >= 0; index -= 1) {
+      rawLabels[index].labelY = Math.min(rawLabels[index].labelY, rawLabels[index + 1].labelY - minGap);
+    }
+  }
+
+  for (let index = 0; index < rawLabels.length; index += 1) {
+    rawLabels[index].labelY = clamp(rawLabels[index].labelY, topBound, bottomBound);
+  }
+
+  return rawLabels.map((label) => ({
+    ...label,
+    lineEndX: plotRight + 10,
+    textX: plotRight + 16,
+  }));
+}
+
 function resolveVisibleValueRange(values) {
   const finiteValues = values.filter(Number.isFinite);
   if (!finiteValues.length) {
@@ -2015,6 +2112,16 @@ function describeSelection(selectedAssets) {
 function dailyStartForAsset(assetId) {
   if (assetId !== "nikkei225") return null;
   return "2023-01-04";
+}
+
+function incrementDateKey(dateKey, dayOffset) {
+  const dateValue = new Date(`${dateKey}T00:00:00`);
+  dateValue.setDate(dateValue.getDate() + dayOffset);
+  return [
+    dateValue.getFullYear(),
+    `${dateValue.getMonth() + 1}`.padStart(2, "0"),
+    `${dateValue.getDate()}`.padStart(2, "0"),
+  ].join("-");
 }
 
 function formatDateCompact(dateKey) {

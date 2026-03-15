@@ -45,6 +45,32 @@ SERIES_FILES = {
 }
 
 
+def relativize_path(value: str) -> str:
+    text = str(value)
+    root_text = str(ROOT_DIR)
+    home_text = str(Path.home())
+    if text == root_text:
+        return "."
+    if root_text in text:
+        return text.replace(root_text, ".")
+    if text.startswith(f"{root_text}/"):
+        return text.replace(f"{root_text}/", "", 1)
+    if home_text in text:
+        return text.replace(home_text, "$HOME")
+    return text
+
+
+def sanitize_log_lines(lines: list[str]) -> list[str]:
+    sanitized = []
+    for line in lines:
+        sanitized.append(relativize_path(line))
+    return sanitized
+
+
+def command_for_status(command: list[str]) -> list[str]:
+    return [relativize_path(part) for part in command]
+
+
 def read_csv_coverage(path: Path) -> dict:
     if not path.exists():
         return {"exists": False}
@@ -60,7 +86,7 @@ def read_csv_coverage(path: Path) -> dict:
         "rows": len(rows) - 1,
         "start": rows[1][0],
         "end": rows[-1][0],
-        "file": str(path),
+        "file": relativize_path(path),
     }
 
 
@@ -81,7 +107,7 @@ def main() -> int:
         "success": False,
         "startedAt": started_at.isoformat(),
         "refreshDate": started_at.date().isoformat(),
-        "rootDir": str(ROOT_DIR),
+        "rootDir": ".",
         "tasks": [],
         "series": {},
     }
@@ -100,11 +126,11 @@ def main() -> int:
         task_payload = {
             "id": task["id"],
             "label": task["label"],
-            "command": task["command"],
+            "command": command_for_status(task["command"]),
             "success": result.returncode == 0,
             "durationSeconds": round(task_finished_at - task_started_at, 2),
-            "stdout": result.stdout.strip().splitlines()[-20:],
-            "stderr": result.stderr.strip().splitlines()[-20:],
+            "stdout": sanitize_log_lines(result.stdout.strip().splitlines()[-20:]),
+            "stderr": sanitize_log_lines(result.stderr.strip().splitlines()[-20:]),
             "returnCode": result.returncode,
         }
         status["tasks"].append(task_payload)
