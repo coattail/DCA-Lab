@@ -17,6 +17,7 @@ const ASSETS = {
   nasdaq100: {
     id: "nasdaq100",
     name: "纳斯达克100",
+    chartLabel: "纳指100",
     english: "Nasdaq-100",
     short: "NDX",
     color: "#0da38d",
@@ -1987,7 +1988,7 @@ function buildChartEndLabels(assetPaths, { width, top, bottom, plotRight }) {
       return {
         assetId: result.assetId,
         color: result.asset.color,
-        text: width < 860 ? result.asset.short : result.asset.name,
+        text: result.asset.chartLabel || (width < 860 ? result.asset.short : result.asset.name),
         anchorX: anchor.x,
         anchorY: anchor.y,
         labelY: anchor.y,
