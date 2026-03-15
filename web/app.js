@@ -293,8 +293,6 @@ function cacheDom() {
   dom.assetMetrics = document.querySelector("#asset-metrics");
   dom.sourceNotes = document.querySelector("#source-notes");
   dom.scheduleSummary = document.querySelector("#schedule-summary");
-  dom.yearTableHead = document.querySelector("#year-table-head");
-  dom.yearTableBody = document.querySelector("#year-table-body");
   dom.drawdownEvents = document.querySelector("#drawdown-events");
   dom.returnSegments = document.querySelectorAll('[data-group="return-mode"] .segment');
   dom.frequencySegments = document.querySelectorAll('[data-group="frequency"] .segment');
@@ -584,8 +582,6 @@ function rerunBacktest() {
     if (dom.assetMetrics) dom.assetMetrics.innerHTML = "";
     if (dom.sourceNotes) dom.sourceNotes.innerHTML = "";
     dom.scheduleSummary.innerHTML = "";
-    dom.yearTableHead.innerHTML = "";
-    dom.yearTableBody.innerHTML = "";
     dom.drawdownEvents.innerHTML = "";
     return;
   }
@@ -958,7 +954,6 @@ function simulateAsset({ assetId, timeline, principalSeries, contributionDateSet
   const annualizedReturn = computeXirr(cashFlows);
   const drawdown = computeDrawdownAnalysis(points);
   const volatility = computeAnnualizedVolatility(points);
-  const yearlySnapshots = buildYearlySnapshots(points);
 
   return {
     assetId,
@@ -974,7 +969,6 @@ function simulateAsset({ assetId, timeline, principalSeries, contributionDateSet
     volatility,
     contributionCount: cashFlows.length - 1,
     drawdown,
-    yearlySnapshots,
   };
 }
 
@@ -1164,20 +1158,6 @@ function dxnpv(rate, cashFlows) {
   }, 0);
 }
 
-function buildYearlySnapshots(points) {
-  const snapshots = [];
-
-  for (let index = 0; index < points.length; index += 1) {
-    const point = points[index];
-    const next = points[index + 1];
-    if (!next || point.dateKey.slice(0, 4) !== next.dateKey.slice(0, 4)) {
-      snapshots.push(point);
-    }
-  }
-
-  return snapshots;
-}
-
 function sampleTimeline(timeline, sampling) {
   if (timeline.length <= 2) return timeline.slice();
   if (sampling === "weekly") return sampleByBucket(timeline, (point) => getBucketKey(point.date, "weekly"));
@@ -1266,7 +1246,6 @@ function renderRun(run) {
   renderAssetMetrics(run);
   renderSourceNotes(run);
   renderScheduleSummary(run);
-  renderYearTable(run);
   renderDrawdownEvents(run);
   scheduleChartRender();
 }
@@ -1530,66 +1509,6 @@ function renderScheduleSummary(run) {
       `,
     )
     .join("");
-}
-
-function renderYearTable(run) {
-  const rows = collectYearRows(run);
-  const headers = ["年份", "累计投入", ...run.assetResults.map((result) => result.asset.name)];
-
-  dom.yearTableHead.innerHTML = `
-    <tr>
-      ${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}
-    </tr>
-  `;
-
-  dom.yearTableBody.innerHTML = rows
-    .map((row) => {
-      const assetCells = run.assetResults
-        .map((result) => {
-          const snapshot = row.assets[result.assetId];
-          const cls = snapshot.returnPct >= 0 ? "is-positive" : "is-negative";
-          return `<td class="${cls}">${escapeHtml(formatters.currency.format(snapshot.value))}</td>`;
-        })
-        .join("");
-
-      return `
-        <tr>
-          <td>${escapeHtml(String(row.year))}</td>
-          <td>${escapeHtml(formatters.currency.format(row.invested))}</td>
-          ${assetCells}
-        </tr>
-      `;
-    })
-    .join("");
-}
-
-function collectYearRows(run) {
-  const yearMap = new Map();
-  const principalMap = new Map(run.principalSeries.map((point) => [point.dateKey, point]));
-
-  for (const result of run.assetResults) {
-    for (const snapshot of result.yearlySnapshots) {
-      const year = Number(snapshot.dateKey.slice(0, 4));
-      if (!yearMap.has(year)) {
-        yearMap.set(year, {
-          year,
-          invested: principalMap.get(snapshot.dateKey)?.invested || snapshot.principal,
-          assets: {},
-        });
-      }
-
-      const previousYearRow = yearMap.get(year - 1);
-      const previousValue = previousYearRow?.assets?.[result.assetId]?.value || snapshot.principal;
-      const returnPct = previousValue > 0 ? ((snapshot.value - previousValue) / previousValue) * 100 : 0;
-
-      yearMap.get(year).assets[result.assetId] = {
-        value: snapshot.value,
-        returnPct,
-      };
-    }
-  }
-
-  return Array.from(yearMap.values()).sort((left, right) => right.year - left.year);
 }
 
 function renderDrawdownEvents(run) {
