@@ -222,10 +222,13 @@ const formatters = {
 const state = {
   data: {},
   fx: {},
+  assetLoads: new Map(),
+  fxLoads: new Map(),
   refreshMeta: null,
   refreshPollTimer: null,
   ui: { ...DEFAULTS },
   run: null,
+  runRequestId: 0,
   chartObserver: null,
   chartWindow: { startRatio: 0, endRatio: 1 },
   chartRenderFrame: null,
@@ -244,11 +247,14 @@ async function init() {
   setStatus("加载数据中", "正在读取价格指数与全收益序列。");
 
   try {
-    await loadAllData();
+    state.refreshMeta = await loadRefreshMeta();
+    scheduleRefreshStatusPolling();
+    await ensureAssetsReady(state.ui.selectedAssets);
     renderFeedCards();
     ensureDateWithinAvailableRange();
-    rerunBacktest();
+    await rerunBacktest();
     installChartResizeObserver();
+    void preloadRemainingData();
   } catch (error) {
     console.error(error);
     setStatus("数据加载失败", "本地数据文件读取异常，请检查 web/data 目录和控制台信息。");
@@ -303,14 +309,16 @@ function cacheDom() {
 
 function bindEvents() {
   for (const input of dom.assetInputs) {
-    input.addEventListener("change", (event) => handleAssetToggle(event, input.dataset.assetId));
+    input.addEventListener("change", (event) => {
+      void handleAssetToggle(event, input.dataset.assetId);
+    });
   }
 
   for (const button of dom.returnSegments) {
     button.addEventListener("click", () => {
       state.ui.returnMode = button.dataset.value;
       setActiveButtons(dom.returnSegments, state.ui.returnMode);
-      rerunBacktest();
+      void rerunBacktest();
     });
   }
 
@@ -318,7 +326,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.ui.frequency = button.dataset.value;
       setActiveButtons(dom.frequencySegments, state.ui.frequency);
-      rerunBacktest();
+      void rerunBacktest();
     });
   }
 
@@ -326,14 +334,14 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.ui.preset = button.dataset.preset;
       setActivePreset(state.ui.preset);
-      rerunBacktest();
+      void rerunBacktest();
     });
   }
 
   dom.startDate.addEventListener("change", () => {
     state.ui.preset = null;
     setActivePreset(null);
-    rerunBacktest();
+    void rerunBacktest();
   });
 
   dom.amountInput.addEventListener("change", () => {
@@ -341,7 +349,7 @@ function bindEvents() {
     state.ui.amount = Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULTS.amount;
     dom.amountInput.value = String(Math.round(state.ui.amount));
     syncQuickAmounts();
-    rerunBacktest();
+    void rerunBacktest();
   });
 
   for (const button of dom.quickAmountButtons) {
@@ -349,11 +357,11 @@ function bindEvents() {
       state.ui.amount = Number(button.dataset.amount);
       dom.amountInput.value = String(state.ui.amount);
       syncQuickAmounts();
-      rerunBacktest();
+      void rerunBacktest();
     });
   }
 
-  dom.runButton.addEventListener("click", () => rerunBacktest());
+  dom.runButton.addEventListener("click", () => void rerunBacktest());
   dom.timelineStart.addEventListener("input", () => handleTimelineRangeInput("start"));
   dom.timelineEnd.addEventListener("input", () => handleTimelineRangeInput("end"));
   dom.resetVisibleRange.addEventListener("click", () => resetTimelineWindow());
@@ -388,7 +396,7 @@ function syncQuickAmounts() {
   }
 }
 
-function handleAssetToggle(event, assetId) {
+async function handleAssetToggle(event, assetId) {
   const selected = new Set(getSelectedAssetsFromInputs());
 
   if (selected.size === 0) {
@@ -402,44 +410,121 @@ function handleAssetToggle(event, assetId) {
   }
 
   state.ui.selectedAssets = Array.from(selected);
-  rerunBacktest();
+  await rerunBacktest();
 }
 
 function getSelectedAssetsFromInputs() {
   return dom.assetInputs.filter((input) => input.checked).map((input) => input.dataset.assetId);
 }
 
-async function loadAllData() {
-  const assetEntries = Object.values(ASSETS);
-  const tasks = assetEntries.map(async (asset) => {
+async function preloadRemainingData() {
+  const remainingAssets = Object.keys(ASSETS).filter((assetId) => !state.data[assetId]);
+  if (!remainingAssets.length) return;
+
+  try {
+    await ensureAssetsReady(remainingAssets);
+    renderFeedCards();
+  } catch (error) {
+    console.error("Background asset preload failed", error);
+  }
+}
+
+async function ensureAssetsReady(assetIds) {
+  const uniqueAssetIds = Array.from(new Set(assetIds.filter(Boolean)));
+  if (!uniqueAssetIds.length) return;
+
+  await Promise.all(uniqueAssetIds.map((assetId) => loadAssetData(assetId)));
+
+  const fxPairs = Array.from(
+    new Set(
+      uniqueAssetIds
+        .map((assetId) => ASSETS[assetId]?.fxPair)
+        .filter(Boolean),
+    ),
+  );
+
+  if (fxPairs.length) {
+    await Promise.all(fxPairs.map((pairId) => loadFxData(pairId)));
+  }
+}
+
+async function loadAssetData(assetId) {
+  if (state.data[assetId]) return state.data[assetId];
+  if (state.assetLoads.has(assetId)) {
+    return state.assetLoads.get(assetId);
+  }
+
+  const asset = ASSETS[assetId];
+  if (!asset) {
+    throw new Error(`Unknown asset: ${assetId}`);
+  }
+
+  const task = (async () => {
     const price = await fetchCsvSeries(asset.priceSource);
     const totalReturn = await fetchOptionalCsvSeries(asset.totalReturnSource);
 
-    state.data[asset.id] = {
+    const payload = {
       price,
       totalReturn,
       priceMap: buildSeriesMap(price),
       totalReturnMap: buildSeriesMap(totalReturn),
     };
-  });
 
-  const fxTasks = Object.values(FX_SERIES).map(async (pair) => {
+    state.data[asset.id] = payload;
+    return payload;
+  })();
+
+  state.assetLoads.set(assetId, task);
+
+  try {
+    return await task;
+  } finally {
+    state.assetLoads.delete(assetId);
+  }
+}
+
+async function loadFxData(pairId) {
+  if (!pairId) return null;
+  if (state.fx[pairId]) return state.fx[pairId];
+  if (state.fxLoads.has(pairId)) {
+    return state.fxLoads.get(pairId);
+  }
+
+  const pair = FX_SERIES[pairId];
+  if (!pair) {
+    throw new Error(`Unknown FX pair: ${pairId}`);
+  }
+
+  const task = (async () => {
     const series = await fetchCsvSeries(pair.source);
-    state.fx[pair.id] = {
+    const payload = {
       ...pair,
       series,
       map: buildSeriesMap(series),
       resolvedCache: new Map(),
     };
-  });
 
-  await Promise.all([...tasks, ...fxTasks]);
-  state.refreshMeta = await loadRefreshMeta();
-  scheduleRefreshStatusPolling();
+    state.fx[pair.id] = payload;
+    return payload;
+  })();
+
+  state.fxLoads.set(pairId, task);
+
+  try {
+    return await task;
+  } finally {
+    state.fxLoads.delete(pairId);
+  }
+}
+
+function buildDataRequestUrl(url) {
+  const refreshVersion = state.refreshMeta?.finishedAt || state.refreshMeta?.refreshDate;
+  const version = encodeURIComponent(refreshVersion || DATA_CACHE_BUSTER);
+  return `${url}?v=${DATA_CACHE_BUSTER}&d=${version}`;
 }
 
 async function fetchCsvSeries(url) {
-  const response = await fetch(`${url}?v=${DATA_CACHE_BUSTER}`, { cache: "no-store" });
+  const response = await fetch(buildDataRequestUrl(url), { cache: "default" });
   if (!response.ok) {
     throw new Error(`Failed to load ${url}: ${response.status}`);
   }
@@ -453,7 +538,7 @@ async function fetchCsvSeries(url) {
 
 async function fetchOptionalCsvSeries(url) {
   try {
-    const response = await fetch(`${url}?v=${DATA_CACHE_BUSTER}`, { cache: "no-store" });
+    const response = await fetch(buildDataRequestUrl(url), { cache: "default" });
     if (!response.ok) return [];
     const text = await response.text();
     return parseCsvSeries(text);
@@ -464,7 +549,7 @@ async function fetchOptionalCsvSeries(url) {
 
 async function fetchOptionalJson(url) {
   try {
-    const response = await fetch(`${url}?v=${DATA_CACHE_BUSTER}`, { cache: "no-store" });
+    const response = await fetch(buildDataRequestUrl(url), { cache: "no-store" });
     if (!response.ok) return null;
     return await response.json();
   } catch (_error) {
@@ -487,6 +572,8 @@ function parseCsvSeries(text) {
 
   const points = [];
   let skippedInvalidRows = 0;
+  let previousDateMs = -Infinity;
+  let needsSort = false;
   for (let index = 1; index < lines.length; index += 1) {
     const row = lines[index].trim();
     if (!row) continue;
@@ -504,13 +591,18 @@ function parseCsvSeries(text) {
       dateMs: date.getTime(),
       close,
     });
+
+    if (date.getTime() < previousDateMs) {
+      needsSort = true;
+    }
+    previousDateMs = date.getTime();
   }
 
   if (skippedInvalidRows > 0) {
     console.warn(`Skipped ${skippedInvalidRows} invalid data row(s) while parsing CSV series.`);
   }
 
-  return points.sort((left, right) => left.dateMs - right.dateMs);
+  return needsSort ? points.sort((left, right) => left.dateMs - right.dateMs) : points;
 }
 
 function buildSeriesMap(series) {
@@ -561,11 +653,32 @@ function parseUtcDate(dateKey) {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
-function rerunBacktest() {
+async function rerunBacktest() {
+  const requestId = ++state.runRequestId;
   state.ui.selectedAssets = getSelectedAssetsFromInputs();
   state.ui.amount = Math.max(1, Number(dom.amountInput.value) || DEFAULTS.amount);
 
   const selectedAssets = state.ui.selectedAssets;
+  const pendingAssetIds = selectedAssets.filter((assetId) => !state.data[assetId]);
+
+  if (pendingAssetIds.length) {
+    setStatus("加载所选指数中", `正在补充 ${pendingAssetIds.map((assetId) => ASSETS[assetId].name).join("、")} 的本地数据。`);
+  }
+
+  try {
+    await ensureAssetsReady(selectedAssets);
+  } catch (error) {
+    console.error(error);
+    setStatus("数据加载失败", "新增指数数据读取异常，请检查 web/data 目录和控制台信息。");
+    dom.dataNotice.hidden = false;
+    dom.dataNotice.textContent = "未能完成所选指数的数据加载，请稍后重试。";
+    return;
+  }
+
+  if (requestId !== state.runRequestId) {
+    return;
+  }
+
   const effectiveMode = resolveEffectiveMode(selectedAssets, state.ui.returnMode);
   const baseTimeline = buildAlignedTimeline(selectedAssets, effectiveMode.mode);
   const priceTimeline = buildAlignedTimeline(selectedAssets, "price");
@@ -1264,18 +1377,23 @@ function renderFeedCards() {
 
   dom.feedCards.innerHTML = Object.values(ASSETS)
     .map((asset) => {
-      const priceSeries = state.data[asset.id].price;
-      const totalReturnSeries = state.data[asset.id].totalReturn;
-      const priceRange = `${formatDateCompact(priceSeries[0].dateKey)} - ${formatDateCompact(
-        priceSeries[priceSeries.length - 1].dateKey,
-      )}`;
-      const totalReturnText = totalReturnSeries.length
-        ? `${formatDateCompact(totalReturnSeries[0].dateKey)} - ${formatDateCompact(
-            totalReturnSeries[totalReturnSeries.length - 1].dateKey,
-          )}`
-        : "未导入";
-      const totalReturnStatus = totalReturnSeries.length ? "已接入全收益" : "仅价格收益";
-      const statusClass = totalReturnSeries.length ? "" : " feed-card__status--muted";
+      const assetData = state.data[asset.id];
+      const priceSeries = assetData?.price || [];
+      const totalReturnSeries = assetData?.totalReturn || [];
+      const isLoaded = Boolean(assetData);
+      const priceRange =
+        priceSeries.length > 1
+          ? `${formatDateCompact(priceSeries[0].dateKey)} - ${formatDateCompact(priceSeries[priceSeries.length - 1].dateKey)}`
+          : "后台加载中";
+      const totalReturnText = !isLoaded
+        ? "后台加载中"
+        : totalReturnSeries.length
+          ? `${formatDateCompact(totalReturnSeries[0].dateKey)} - ${formatDateCompact(
+              totalReturnSeries[totalReturnSeries.length - 1].dateKey,
+            )}`
+          : "未导入";
+      const totalReturnStatus = !isLoaded ? "后台加载中" : totalReturnSeries.length ? "已接入全收益" : "仅价格收益";
+      const statusClass = !isLoaded || totalReturnSeries.length ? "" : " feed-card__status--muted";
 
       return `
         <article class="feed-card">
@@ -1298,7 +1416,9 @@ function renderFeedCards() {
 }
 
 function getLatestCommonPriceDate() {
-  const selected = Object.values(ASSETS).map((asset) => state.data[asset.id].price.at(-1)?.dateKey).filter(Boolean);
+  const selected = Object.values(ASSETS)
+    .map((asset) => state.data[asset.id]?.price?.at(-1)?.dateKey)
+    .filter(Boolean);
   if (!selected.length) return null;
   return selected.sort()[0];
 }
