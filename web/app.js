@@ -1231,10 +1231,10 @@ function renderRun(run) {
     dom.detailGrid.classList.toggle("detail-grid--three-plus", run.selectedAssets.length >= 3);
   }
   if (dom.resultsGrid) {
-    dom.resultsGrid.classList.toggle("results-grid--three-plus", run.selectedAssets.length >= 3);
+    dom.resultsGrid.classList.remove("results-grid--three-plus");
   }
   if (dom.insightPanel) {
-    dom.insightPanel.classList.toggle("insight-panel--full", run.selectedAssets.length >= 3);
+    dom.insightPanel.classList.remove("insight-panel--full");
   }
   if (dom.assetMetrics) {
     dom.assetMetrics.dataset.count = String(run.selectedAssets.length);
