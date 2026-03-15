@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>指数定投回测工作台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+SC:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css?v=20260315-dca-studio-v28" />
+  </head>
+  <body>
+    <div class="page-grid" aria-hidden="true"></div>
+    <div class="page-glow page-glow-a" aria-hidden="true"></div>
+    <div class="page-glow page-glow-b" aria-hidden="true"></div>
+    <div class="page-noise" aria-hidden="true"></div>
+
+    <main class="site-shell">
+      <section class="config-panel panel reveal">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">STRATEGY CONFIG</p>
+            <h2>回测参数</h2>
+          </div>
+          <div class="section-chip-stack">
+            <div class="section-chip">
+              <span>回测框架</span>
+              <strong>DCA 定投</strong>
+            </div>
+            <div class="section-chip">
+              <span>估值频率</span>
+              <strong id="effective-mode-chip">全收益</strong>
+            </div>
+          </div>
+        </div>
+
+        <div id="data-notice" class="notice" hidden></div>
+
+        <div class="config-grid">
+          <article class="control-card control-card--assets">
+            <div class="control-card__head">
+              <div>
+                <h3>跟踪指数</h3>
+                <p>最多对比 4 条指数。新增沪深300、日经225后，跨市场样本统一按美元投资者口径比较。</p>
+              </div>
+              <span class="control-pill">对比资产</span>
+            </div>
+
+            <div class="asset-selector">
+              <label class="asset-card">
+                <input id="asset-sp500" data-asset-id="sp500" type="checkbox" checked />
+                <span class="asset-card__body">
+                  <span class="asset-card__top">
+                    <strong>标普500</strong>
+                    <span>S&amp;P 500</span>
+                  </span>
+                  <span class="asset-card__meta">价格: ^SPX · 全收益官方符号: SPXT</span>
+                </span>
+              </label>
+
+              <label class="asset-card asset-card--alt">
+                <input id="asset-nasdaq100" data-asset-id="nasdaq100" type="checkbox" checked />
+                <span class="asset-card__body">
+                  <span class="asset-card__top">
+                    <strong>纳斯达克100</strong>
+                    <span>Nasdaq-100</span>
+                  </span>
+                  <span class="asset-card__meta">价格: ^NDX · 全收益官方符号: XNDX</span>
+                </span>
+              </label>
+
+              <label class="asset-card">
+                <input id="asset-hs300" data-asset-id="hs300" type="checkbox" />
+                <span class="asset-card__body">
+                  <span class="asset-card__top">
+                    <strong>沪深300</strong>
+                    <span>CSI 300</span>
+                  </span>
+                  <span class="asset-card__meta">价格: 沪深300日线 · 全收益官方代码: H00300 · 汇率: USD/CNY</span>
+                </span>
+              </label>
+
+              <label class="asset-card asset-card--alt">
+                <input id="asset-nikkei225" data-asset-id="nikkei225" type="checkbox" />
+                <span class="asset-card__body">
+                  <span class="asset-card__top">
+                    <strong>日经225</strong>
+                    <span>Nikkei 225</span>
+                  </span>
+                  <span class="asset-card__meta">价格: 日经官方历史页 · 全收益: Nikkei 225 TR · 汇率: USD/JPY</span>
+                </span>
+              </label>
+            </div>
+          </article>
+
+          <article class="control-card control-card--return">
+            <div class="control-card__head">
+              <div>
+                <h3>回测口径</h3>
+                <p>优先按你选择的口径计算，若数据缺失会透明提示并回退。</p>
+              </div>
+            </div>
+            <div class="segmented" data-group="return-mode">
+              <button class="segment is-active" data-value="total" type="button">全收益</button>
+              <button class="segment" data-value="price" type="button">价格收益</button>
+            </div>
+          </article>
+
+          <article class="control-card control-card--frequency">
+            <div class="control-card__head">
+              <div>
+                <h3>定投频率</h3>
+                <p>按每个周期的首个可交易日执行一次买入。</p>
+              </div>
+            </div>
+            <div class="segmented" data-group="frequency">
+              <button class="segment is-active" data-value="monthly" type="button">每月</button>
+              <button class="segment" data-value="weekly" type="button">每周</button>
+              <button class="segment" data-value="daily" type="button">每个交易日</button>
+            </div>
+          </article>
+
+          <article class="control-card control-card--sampling">
+            <div class="control-card__head">
+              <div>
+                <h3>图表精度</h3>
+                <p>只影响图表抽样，不影响回测本身。</p>
+              </div>
+            </div>
+            <div class="segmented" data-group="sampling">
+              <button class="segment is-active" data-value="monthly" type="button">月度</button>
+              <button class="segment" data-value="weekly" type="button">周度</button>
+            </div>
+          </article>
+
+          <article class="control-card control-card--date">
+            <div class="control-card__head">
+              <div>
+                <h3>起投日期</h3>
+                <p id="date-range-hint">加载数据后自动给出可选区间。</p>
+              </div>
+            </div>
+
+            <div class="date-shell">
+              <input id="start-date" type="date" />
+            </div>
+
+            <div class="preset-row">
+              <button class="preset-button" data-preset="earliest" type="button">最早</button>
+              <button class="preset-button" data-preset="1" type="button">近1年</button>
+              <button class="preset-button" data-preset="3" type="button">近3年</button>
+              <button class="preset-button" data-preset="5" type="button">近5年</button>
+              <button class="preset-button" data-preset="10" type="button">近10年</button>
+              <button class="preset-button" data-preset="15" type="button">近15年</button>
+              <button class="preset-button is-active" data-preset="20" type="button">近20年</button>
+            </div>
+          </article>
+
+          <article class="control-card control-card--amount">
+            <div class="control-card__head">
+              <div>
+                <h3>单次定投金额</h3>
+                <p>以美元计价，默认 500 USD。</p>
+              </div>
+            </div>
+
+            <label class="amount-shell" for="amount-input">
+              <span>USD</span>
+              <input id="amount-input" type="number" min="1" step="50" value="500" />
+            </label>
+
+            <div class="quick-amounts">
+              <button class="quick-amount" data-amount="200" type="button">200</button>
+              <button class="quick-amount is-active" data-amount="500" type="button">500</button>
+              <button class="quick-amount" data-amount="1000" type="button">1000</button>
+              <button class="quick-amount" data-amount="2000" type="button">2000</button>
+            </div>
+          </article>
+        </div>
+
+        <div class="config-footer">
+          <button id="run-backtest" class="cta-button" type="button">生成资产趋势</button>
+          <div class="status-copy">
+            <strong id="status-title">等待回测</strong>
+            <p id="status-text">数据加载完成后会自动生成一版默认结果，之后你可以继续微调。</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="results-grid" class="results-grid">
+        <section id="chart-panel" class="chart-panel panel reveal">
+          <div class="section-head section-head--compact">
+            <div>
+              <p class="eyebrow">ASSET CURVE</p>
+              <h2>累计资产</h2>
+              <p id="chart-caption" class="section-copy">回测完成后，这里会显示本金与总资产曲线。</p>
+            </div>
+            <div id="chart-legend" class="chart-legend"></div>
+          </div>
+
+          <div id="overview-cards" class="overview-cards"></div>
+
+          <div id="chart-shell" class="chart-shell">
+            <div id="chart-empty" class="chart-empty" hidden>暂无可绘制的回测结果。</div>
+            <div id="chart-surface" class="chart-surface" aria-label="定投资产趋势图"></div>
+            <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+          </div>
+
+          <div id="timeline-zoom" class="timeline-zoom">
+            <div class="timeline-zoom__head">
+              <span>可视区间</span>
+              <strong id="visible-range-label">全区间</strong>
+              <button id="reset-visible-range" class="timeline-zoom__reset" type="button">重置全区间</button>
+            </div>
+            <div class="dual-range" aria-label="时间区间缩放">
+              <div class="dual-range__track"></div>
+              <div id="timeline-range-fill" class="dual-range__fill"></div>
+              <input id="timeline-start" class="dual-range__input" type="range" min="0" max="1000" value="0" />
+              <input id="timeline-end" class="dual-range__input" type="range" min="0" max="1000" value="1000" />
+            </div>
+          </div>
+
+          <div id="chart-summary" class="chart-summary"></div>
+        </section>
+
+        <aside id="insight-panel" class="insight-panel panel reveal">
+          <div class="section-head section-head--compact">
+            <div>
+              <p class="eyebrow">RESULT SNAPSHOT</p>
+              <h2>结果概览</h2>
+              <p id="result-context" class="section-copy">加载中</p>
+            </div>
+          </div>
+
+          <div id="asset-metrics" class="asset-metrics"></div>
+        </aside>
+      </section>
+
+      <section class="detail-panel panel reveal">
+        <div class="section-head section-head--compact">
+          <div>
+            <p class="eyebrow">TIMING &amp; RISK</p>
+            <h2>关键事件与节奏</h2>
+            <p class="section-copy">把回测结果拆成节奏、年度截面与回撤事件，便于快速判断策略质量。</p>
+          </div>
+        </div>
+
+        <div id="detail-grid" class="detail-grid">
+          <article class="detail-card detail-card--schedule">
+            <h3>定投节奏摘要</h3>
+            <div id="schedule-summary" class="schedule-summary"></div>
+          </article>
+
+          <article class="detail-card detail-card--table">
+            <h3>年度表现截面</h3>
+            <div class="table-shell">
+              <table class="year-table">
+                <thead id="year-table-head"></thead>
+                <tbody id="year-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="detail-card detail-card--drawdown">
+            <h3>前五大回撤事件</h3>
+            <div id="drawdown-events" class="drawdown-events"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js?v=20260315-dca-studio-v28"></script>
+  </body>
+</html>
