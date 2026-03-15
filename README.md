@@ -23,10 +23,10 @@
 
 本地文件：
 
-- `/Users/yuwan/Documents/New project/web/data/sp500.csv`
-- `/Users/yuwan/Documents/New project/web/data/nasdaq100.csv`
-- `/Users/yuwan/Documents/New project/web/data/hs300.csv`
-- `/Users/yuwan/Documents/New project/web/data/nikkei225.csv`
+- `web/data/sp500.csv`
+- `web/data/nasdaq100.csv`
+- `web/data/hs300.csv`
+- `web/data/nikkei225.csv`
 
 ### 全收益
 
@@ -38,10 +38,10 @@
 
 本地文件：
 
-- `/Users/yuwan/Documents/New project/web/data/nasdaq100-total-return.csv`
-- `/Users/yuwan/Documents/New project/web/data/sp500-total-return.csv`
-- `/Users/yuwan/Documents/New project/web/data/hs300-total-return.csv`
-- `/Users/yuwan/Documents/New project/web/data/nikkei225-total-return.csv`
+- `web/data/nasdaq100-total-return.csv`
+- `web/data/sp500-total-return.csv`
+- `web/data/hs300-total-return.csv`
+- `web/data/nikkei225-total-return.csv`
 
 说明：
 
@@ -52,34 +52,51 @@
 
 ## 更新本地数据
 
+在仓库根目录执行：
+
 更新价格数据：
 
 ```bash
-cd /Users/yuwan/Documents/New\ project
 ./backend/scripts/localize_market_data.sh
 ```
 
 更新全收益数据：
 
 ```bash
-cd /Users/yuwan/Documents/New\ project
 python3 backend/scripts/localize_total_return_data.py
+```
+
+更新跨市场与汇率数据：
+
+```bash
+python3 backend/scripts/localize_scheme_b_data.py
+```
+
+一键刷新全部数据：
+
+```bash
+python3 backend/scripts/refresh_backtest_data.py
 ```
 
 ## 启动网页
 
 ```bash
-cd /Users/yuwan/Documents/New\ project
 python3 preview_server.py
 ```
 
 然后打开 `http://127.0.0.1:4175`。
 
+如果你想使用其他端口：
+
+```bash
+PORT=8080 python3 preview_server.py
+```
+
 ## 计算口径
 
 - 定投买点：每个周期的首个可交易日
 - 买入价格：当日收盘价
-- 双资产对比：按共同可交易日期对齐后再模拟
+- 多资产对比：按共同可交易日期对齐后再模拟
 - 最大回撤：基于策略资产净值曲线计算
 - 资金年化收益率：基于实际现金流的 `XIRR`
 - 年化波动率：基于所用指数序列的日收益率估算
