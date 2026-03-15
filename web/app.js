@@ -1232,10 +1232,12 @@ function renderRun(run) {
     dom.detailGrid.classList.toggle("detail-grid--three-plus", run.selectedAssets.length >= 3);
   }
   if (dom.resultsGrid) {
-    dom.resultsGrid.classList.remove("results-grid--three-plus");
+    dom.resultsGrid.classList.toggle("results-grid--triple", run.selectedAssets.length === 3);
+    dom.resultsGrid.classList.toggle("results-grid--quad", run.selectedAssets.length >= 4);
   }
   if (dom.insightPanel) {
-    dom.insightPanel.classList.remove("insight-panel--full");
+    dom.insightPanel.classList.toggle("insight-panel--triple", run.selectedAssets.length === 3);
+    dom.insightPanel.classList.toggle("insight-panel--quad", run.selectedAssets.length >= 4);
   }
   if (dom.assetMetrics) {
     dom.assetMetrics.dataset.count = String(run.selectedAssets.length);
