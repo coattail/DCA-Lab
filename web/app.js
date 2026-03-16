@@ -681,7 +681,6 @@ async function rerunBacktest() {
 
   const effectiveMode = resolveEffectiveMode(selectedAssets, state.ui.returnMode);
   const baseTimeline = buildAlignedTimeline(selectedAssets, effectiveMode.mode);
-  const priceTimeline = buildAlignedTimeline(selectedAssets, "price");
 
   dom.dataNotice.hidden = true;
 
@@ -729,7 +728,7 @@ async function rerunBacktest() {
     sampledPoints: sampleSeries(result.points, sampledTimeline),
   }));
 
-  const notices = [...effectiveMode.messages, ...buildRunNotices(selectedAssets, state.ui.returnMode, effectiveMode.mode, priceTimeline, baseTimeline)];
+  const notices = [...effectiveMode.messages];
   if (state.ui.returnMode === "total" && effectiveMode.mode === "price") {
     notices.push("为了保持多条指数可比，本次结果已统一切换为价格收益口径。");
   }
@@ -774,73 +773,6 @@ async function rerunBacktest() {
   );
 
   renderRun(state.run);
-}
-
-function buildRunNotices(selectedAssets, requestedMode, effectiveMode, priceTimeline, effectiveTimeline) {
-  const notices = [];
-  const foreignAssets = selectedAssets.filter((assetId) => ASSETS[assetId].fxPair);
-
-  if (foreignAssets.length) {
-    const fxText = foreignAssets
-      .map((assetId) => `${ASSETS[assetId].name} 按 ${FX_SERIES[ASSETS[assetId].fxPair].label}`)
-      .join("；");
-    notices.push(`方案B美元口径：${fxText}，每次买入按买入日汇率换汇，估值时再按估值日汇率折回美元；若当日缺少官方汇率，则沿用前一可用日。`);
-  }
-
-  if (requestedMode === "total" && effectiveMode === "total") {
-    for (const assetId of selectedAssets) {
-      const priceStart = state.data[assetId]?.price?.[0]?.dateKey;
-      const priceEnd = state.data[assetId]?.price?.at(-1)?.dateKey;
-      const totalStart = state.data[assetId]?.totalReturn?.[0]?.dateKey;
-      const totalEnd = state.data[assetId]?.totalReturn?.at(-1)?.dateKey;
-
-      if (priceStart && totalStart && totalStart > priceStart) {
-        notices.push(
-          `${ASSETS[assetId].name} 全收益当前接入覆盖自 ${formatDateCompact(totalStart)} 起，因此全收益模式下可选区间会自动收窄。`,
-        );
-      }
-
-      if (priceEnd && totalEnd && totalEnd < priceEnd) {
-        notices.push(
-          `${ASSETS[assetId].name} 全收益当前接入覆盖至 ${formatDateCompact(totalEnd)}，晚于该日期的最新区间会自动回退到价格收益或收窄回测终点。`,
-        );
-      }
-
-      if (assetId === "nikkei225") {
-        notices.push(
-          `日经225在 ${formatDateCompact(totalStart)} 至 ${formatDateCompact(
-            ASSETS[assetId].totalReturnInferredUntil,
-          )} 区间，使用日经官方价格日线，并以官方说明书给出的 ${formatDateCompact(
-            ASSETS[assetId].totalReturnCoverageStart,
-          )} 基点 6,569.47 和 ${formatDateCompact(
-            incrementDateKey(ASSETS[assetId].totalReturnInferredUntil, 1),
-          )} 官方 TR 锚点 13,440.95 校准回算日频全收益；${formatDateCompact(
-            incrementDateKey(ASSETS[assetId].totalReturnInferredUntil, 1),
-          )} 至 ${formatDateCompact(
-            ASSETS[assetId].totalReturnHybridUntil,
-          )} 使用官方月频、官方月报锚点与官方价格日线插值；${formatDateCompact(
-            dailyStartForAsset(assetId) || totalStart,
-          )} 起使用官方日频全收益。`,
-        );
-      } else if (ASSETS[assetId].totalReturnApproximateUntil) {
-        notices.push(
-          `${ASSETS[assetId].name} 在 ${formatDateCompact(totalStart)} 至 ${formatDateCompact(
-            ASSETS[assetId].totalReturnApproximateUntil,
-          )} 区间，使用官方月频/官方月报锚点与官方价格日线插值生成日频全收益；${formatDateCompact(
-            dailyStartForAsset(assetId) || totalStart,
-          )} 起使用官方日频全收益。`,
-        );
-      }
-    }
-
-    const priceStart = priceTimeline[0]?.dateKey;
-    const totalStart = effectiveTimeline[0]?.dateKey;
-    if (priceStart && totalStart && totalStart > priceStart && !selectedAssets.some((assetId) => ASSETS[assetId].totalReturnCoverageStart === totalStart)) {
-      notices.push(`统一全收益口径的共同可回测区间起点为 ${formatDateCompact(totalStart)}。`);
-    }
-  }
-
-  return Array.from(new Set(notices));
 }
 
 function resolveEffectiveMode(selectedAssets, requestedMode) {
