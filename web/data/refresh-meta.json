@@ -1,7 +1,7 @@
 {
   "success": true,
-  "startedAt": "2026-03-16T23:50:51.788318+00:00",
-  "refreshDate": "2026-03-16",
+  "startedAt": "2026-03-18T16:58:07.517396+08:00",
+  "refreshDate": "2026-03-18",
   "rootDir": ".",
   "tasks": [
     {
@@ -11,46 +11,27 @@
         "./backend/scripts/localize_market_data.sh"
       ],
       "success": true,
-      "durationSeconds": 84.3,
+      "durationSeconds": 31.93,
       "stdout": [
         "Downloading S&P 500 (^SPX) daily close data (attempt 1/5)...",
-        "Downloading S&P 500 (^SPX) daily close data (attempt 2/5)...",
-        "Downloading S&P 500 (^SPX) daily close data (attempt 3/5)...",
-        "Downloading S&P 500 (^SPX) daily close data (attempt 4/5)...",
-        "Downloading S&P 500 (^SPX) daily close data (attempt 5/5)...",
         "Downloading Nasdaq 100 (^NDX) daily close data (attempt 1/5)...",
-        "Downloading Nasdaq 100 (^NDX) daily close data (attempt 2/5)...",
-        "Downloading Nasdaq 100 (^NDX) daily close data (attempt 3/5)...",
-        "Downloading Nasdaq 100 (^NDX) daily close data (attempt 4/5)...",
-        "Downloading Nasdaq 100 (^NDX) daily close data (attempt 5/5)...",
         "Done. Files saved to: ./web/data"
       ],
-      "stderr": [
-        "Download for S&P 500 (^SPX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for S&P 500 (^SPX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for S&P 500 (^SPX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for S&P 500 (^SPX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for S&P 500 (^SPX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for Nasdaq 100 (^NDX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for Nasdaq 100 (^NDX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for Nasdaq 100 (^NDX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for Nasdaq 100 (^NDX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying...",
-        "Download for Nasdaq 100 (^NDX) daily close data did not produce a valid CSV yet (curl exit 0). Retrying..."
-      ],
+      "stderr": [],
       "returnCode": 0
     },
     {
       "id": "us-total-return",
       "label": "标普500 / 纳指100 全收益",
       "command": [
-        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
         "./backend/scripts/localize_total_return_data.py"
       ],
       "success": true,
-      "durationSeconds": 1.92,
+      "durationSeconds": 4.69,
       "stdout": [
-        "Wrote 9622 rows to ./web/data/sp500-total-return.csv",
-        "Wrote 6797 rows to ./web/data/nasdaq100-total-return.csv",
+        "Wrote 9624 rows to ./web/data/sp500-total-return.csv",
+        "Wrote 6798 rows to ./web/data/nasdaq100-total-return.csv",
         "S&P 500 total return source: Yahoo Finance ^SP500TR (official S&P 500 TR concept maps to SPXT)",
         "Nasdaq-100 total return source: https://indexes.nasdaq.com/Index/History/XNDX"
       ],
@@ -61,16 +42,16 @@
       "id": "scheme-b-localized",
       "label": "沪深300 / 日经225 / 汇率 / 方案B本地化",
       "command": [
-        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
         "./backend/scripts/localize_scheme_b_data.py"
       ],
       "success": true,
-      "durationSeconds": 12.02,
+      "durationSeconds": 14.02,
       "stdout": [
-        "Wrote 5146 raw rows to ./web/data/hs300.csv",
-        "Wrote 5086 raw rows to ./web/data/hs300-total-return.csv",
-        "Wrote 11696 raw rows to ./web/data/nikkei225.csv",
-        "Wrote 11675 raw rows to ./web/data/nikkei225-total-return.csv",
+        "Wrote 5148 raw rows to ./web/data/hs300.csv",
+        "Wrote 5087 raw rows to ./web/data/hs300-total-return.csv",
+        "Wrote 11698 raw rows to ./web/data/nikkei225.csv",
+        "Wrote 11677 raw rows to ./web/data/nikkei225-total-return.csv",
         "Wrote 11280 raw rows to ./web/data/usdcny.csv",
         "Wrote 13834 raw rows to ./web/data/usdjpy.csv",
         "HS300 price source: Eastmoney historical kline for 000300",
@@ -79,65 +60,68 @@
         "Nikkei 225 total return source: Nikkei official daily CSV + monthly CSV + official monthly report anchors + pre-2012 calibrated backfill from official price history",
         "FX sources: FRED DEXCHUS and DEXJPUS"
       ],
-      "stderr": [],
+      "stderr": [
+        "$HOME/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020",
+        "  warnings.warn("
+      ],
       "returnCode": 0
     }
   ],
   "series": {
     "sp500_price": {
       "exists": true,
-      "rows": 39654,
+      "rows": 39656,
       "start": "1789-05-01",
-      "end": "2026-03-13",
+      "end": "2026-03-17",
       "file": "./web/data/sp500.csv"
     },
     "sp500_total_return": {
       "exists": true,
-      "rows": 9622,
+      "rows": 9623,
       "start": "1988-01-04",
-      "end": "2026-03-16",
+      "end": "2026-03-17",
       "file": "./web/data/sp500-total-return.csv"
     },
     "nasdaq100_price": {
       "exists": true,
-      "rows": 10191,
+      "rows": 10193,
       "start": "1985-10-01",
-      "end": "2026-03-13",
+      "end": "2026-03-17",
       "file": "./web/data/nasdaq100.csv"
     },
     "nasdaq100_total_return": {
       "exists": true,
-      "rows": 6796,
+      "rows": 6797,
       "start": "1999-03-10",
-      "end": "2026-03-16",
+      "end": "2026-03-17",
       "file": "./web/data/nasdaq100-total-return.csv"
     },
     "hs300_price": {
       "exists": true,
-      "rows": 5146,
+      "rows": 5148,
       "start": "2005-01-04",
-      "end": "2026-03-16",
+      "end": "2026-03-18",
       "file": "./web/data/hs300.csv"
     },
     "hs300_total_return": {
       "exists": true,
-      "rows": 5086,
+      "rows": 5087,
       "start": "2005-04-08",
-      "end": "2026-03-16",
+      "end": "2026-03-17",
       "file": "./web/data/hs300-total-return.csv"
     },
     "nikkei225_price": {
       "exists": true,
-      "rows": 11696,
+      "rows": 11698,
       "start": "1979-12-01",
-      "end": "2026-03-16",
+      "end": "2026-03-18",
       "file": "./web/data/nikkei225.csv"
     },
     "nikkei225_total_return": {
       "exists": true,
-      "rows": 11674,
+      "rows": 11676,
       "start": "1979-12-28",
-      "end": "2026-03-16",
+      "end": "2026-03-18",
       "file": "./web/data/nikkei225-total-return.csv"
     },
     "usdcny": {
@@ -155,6 +139,6 @@
       "file": "./web/data/usdjpy.csv"
     }
   },
-  "finishedAt": "2026-03-16T23:52:30.033559+00:00",
-  "durationSeconds": 98.25
+  "finishedAt": "2026-03-18T16:58:58.171614+08:00",
+  "durationSeconds": 50.65
 }
