@@ -8,8 +8,10 @@ mkdir -p "$DATA_DIR"
 
 validate_csv() {
   local path="$1"
+  local header
   [[ -f "$path" ]] || return 1
-  head -n 1 "$path" | grep -q '^Date,Open,High,Low,Close,Volume$' || return 1
+  header="$(head -n 1 "$path" | tr -d '\r')"
+  [[ "$header" == "Date,Open,High,Low,Close,Volume" ]] || return 1
   [[ "$(wc -l < "$path")" -ge 100 ]] || return 1
 }
 
@@ -25,7 +27,7 @@ download_csv() {
 
   for attempt in 1 2 3 4 5; do
     echo "Downloading ${label} (attempt ${attempt}/5)..."
-    if curl --noproxy '*' --silent --show-error --location --retry 2 --retry-delay 2 --retry-all-errors "$url" -o "$tmp"; then
+    if curl --noproxy '*' --silent --show-error --location --connect-timeout 15 --max-time 90 --retry 2 --retry-delay 2 --retry-all-errors "$url" -o "$tmp"; then
       rc=0
     else
       rc=$?
