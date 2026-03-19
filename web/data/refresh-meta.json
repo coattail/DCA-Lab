@@ -1,7 +1,7 @@
 {
   "success": true,
-  "startedAt": "2026-03-18T09:21:11.068462+00:00",
-  "refreshDate": "2026-03-18",
+  "startedAt": "2026-03-19T23:51:42.656058+00:00",
+  "refreshDate": "2026-03-19",
   "rootDir": ".",
   "tasks": [
     {
@@ -11,7 +11,7 @@
         "./backend/scripts/localize_market_data.sh"
       ],
       "success": true,
-      "durationSeconds": 6.15,
+      "durationSeconds": 5.44,
       "stdout": [
         "Downloading S&P 500 (^SPX) daily close data (attempt 1/5)...",
         "Downloading Nasdaq 100 (^NDX) daily close data (attempt 1/5)...",
@@ -28,10 +28,10 @@
         "./backend/scripts/localize_total_return_data.py"
       ],
       "success": true,
-      "durationSeconds": 1.69,
+      "durationSeconds": 2.3,
       "stdout": [
-        "Wrote 9624 rows to ./web/data/sp500-total-return.csv",
-        "Wrote 6798 rows to ./web/data/nasdaq100-total-return.csv",
+        "Wrote 9625 rows to ./web/data/sp500-total-return.csv",
+        "Wrote 6800 rows to ./web/data/nasdaq100-total-return.csv",
         "S&P 500 total return source: Yahoo Finance ^SP500TR (official S&P 500 TR concept maps to SPXT)",
         "Nasdaq-100 total return source: https://indexes.nasdaq.com/Index/History/XNDX"
       ],
@@ -46,12 +46,12 @@
         "./backend/scripts/localize_scheme_b_data.py"
       ],
       "success": true,
-      "durationSeconds": 11.56,
+      "durationSeconds": 10.56,
       "stdout": [
-        "Wrote 5148 raw rows to ./web/data/hs300.csv",
-        "Wrote 5087 raw rows to ./web/data/hs300-total-return.csv",
-        "Wrote 11698 raw rows to ./web/data/nikkei225.csv",
-        "Wrote 11677 raw rows to ./web/data/nikkei225-total-return.csv",
+        "Wrote 5149 raw rows to ./web/data/hs300.csv",
+        "Wrote 5089 raw rows to ./web/data/hs300-total-return.csv",
+        "Wrote 11699 raw rows to ./web/data/nikkei225.csv",
+        "Wrote 11678 raw rows to ./web/data/nikkei225-total-return.csv",
         "Wrote 11280 raw rows to ./web/data/usdcny.csv",
         "Wrote 13834 raw rows to ./web/data/usdjpy.csv",
         "HS300 price source: Eastmoney historical kline for 000300",
@@ -67,58 +67,58 @@
   "series": {
     "sp500_price": {
       "exists": true,
-      "rows": 39656,
+      "rows": 39658,
       "start": "1789-05-01",
-      "end": "2026-03-17",
+      "end": "2026-03-19",
       "file": "./web/data/sp500.csv"
     },
     "sp500_total_return": {
       "exists": true,
-      "rows": 9623,
+      "rows": 9625,
       "start": "1988-01-04",
-      "end": "2026-03-17",
+      "end": "2026-03-19",
       "file": "./web/data/sp500-total-return.csv"
     },
     "nasdaq100_price": {
       "exists": true,
-      "rows": 10193,
+      "rows": 10195,
       "start": "1985-10-01",
-      "end": "2026-03-17",
+      "end": "2026-03-19",
       "file": "./web/data/nasdaq100.csv"
     },
     "nasdaq100_total_return": {
       "exists": true,
-      "rows": 6797,
+      "rows": 6799,
       "start": "1999-03-10",
-      "end": "2026-03-17",
+      "end": "2026-03-19",
       "file": "./web/data/nasdaq100-total-return.csv"
     },
     "hs300_price": {
       "exists": true,
-      "rows": 5148,
+      "rows": 5149,
       "start": "2005-01-04",
-      "end": "2026-03-18",
+      "end": "2026-03-19",
       "file": "./web/data/hs300.csv"
     },
     "hs300_total_return": {
       "exists": true,
-      "rows": 5087,
+      "rows": 5089,
       "start": "2005-04-08",
-      "end": "2026-03-17",
+      "end": "2026-03-19",
       "file": "./web/data/hs300-total-return.csv"
     },
     "nikkei225_price": {
       "exists": true,
-      "rows": 11698,
+      "rows": 11699,
       "start": "1979-12-01",
-      "end": "2026-03-18",
+      "end": "2026-03-19",
       "file": "./web/data/nikkei225.csv"
     },
     "nikkei225_total_return": {
       "exists": true,
-      "rows": 11676,
+      "rows": 11677,
       "start": "1979-12-28",
-      "end": "2026-03-18",
+      "end": "2026-03-19",
       "file": "./web/data/nikkei225-total-return.csv"
     },
     "usdcny": {
@@ -136,6 +136,6 @@
       "file": "./web/data/usdjpy.csv"
     }
   },
-  "finishedAt": "2026-03-18T09:21:30.462959+00:00",
-  "durationSeconds": 19.39
+  "finishedAt": "2026-03-19T23:52:00.950971+00:00",
+  "durationSeconds": 18.29
 }
