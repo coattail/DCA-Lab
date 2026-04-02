@@ -17,7 +17,7 @@ TASKS = [
     {
         "id": "market-price",
         "label": "美股价格数据",
-        "command": [str(ROOT_DIR / "backend" / "scripts" / "localize_market_data.sh")],
+        "command": [sys.executable, str(ROOT_DIR / "backend" / "scripts" / "localize_market_data.py")],
         "series_ids": ["sp500_price", "nasdaq100_price"],
     },
     {

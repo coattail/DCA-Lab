@@ -37,6 +37,7 @@ NIKKEI_DATALOAD_ENDPOINT = "https://indexes.nikkei.co.jp/en/nkave/statistics/dat
 NIKKEI_NEWSROOM_ENDPOINT = "https://indexes.nikkei.co.jp/en/nkave/newsroom"
 NIKKEI_TOTAL_RETURN_DAILY_CSV = "https://indexes.nikkei.co.jp/en/nkave/historical/nikkei_225_total_return_index_daily_en.csv"
 NIKKEI_TOTAL_RETURN_MONTHLY_CSV = "https://indexes.nikkei.co.jp/en/nkave/historical/nikkei_225_total_return_index_monthly_en.csv"
+ECB_EXR_ENDPOINT = "https://data-api.ecb.europa.eu/service/data/EXR/D.USD+JPY+CNY.EUR.SP00.A"
 
 NIKKEI_START_YEAR = 1979
 NIKKEI_START_MONTH = 12
@@ -473,6 +474,55 @@ def fetch_fred_series(series_id: str) -> list[tuple[str, float]]:
     return rows
 
 
+def parse_ecb_usd_cross_rates(text: str) -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
+    grouped: dict[str, dict[str, float]] = {}
+    reader = csv.DictReader(text.splitlines())
+    for item in reader:
+        date_key = (item.get("TIME_PERIOD") or "").strip()
+        currency = (item.get("CURRENCY") or "").strip()
+        raw_value = (item.get("OBS_VALUE") or "").strip()
+        if not date_key or currency not in {"USD", "JPY", "CNY"} or not raw_value:
+            continue
+        grouped.setdefault(date_key, {})[currency] = float(raw_value)
+
+    usdcny: list[tuple[str, float]] = []
+    usdjpy: list[tuple[str, float]] = []
+    for date_key in sorted(grouped):
+        rates = grouped[date_key]
+        usd = rates.get("USD")
+        cny = rates.get("CNY")
+        jpy = rates.get("JPY")
+        if not usd:
+            continue
+        if cny:
+            usdcny.append((date_key, round(cny / usd, 8)))
+        if jpy:
+            usdjpy.append((date_key, round(jpy / usd, 8)))
+
+    return usdcny, usdjpy
+
+
+def fetch_ecb_usd_cross_rates() -> tuple[list[tuple[str, float]], list[tuple[str, float]]]:
+    session = make_requests_session()
+    response = session.get(
+        ECB_EXR_ENDPOINT,
+        params={"format": "csvdata", "detail": "dataonly"},
+        timeout=60,
+    )
+    response.raise_for_status()
+    return parse_ecb_usd_cross_rates(response.text)
+
+
+def merge_close_rows(
+    existing_rows: list[tuple[str, float]],
+    fresh_rows: list[tuple[str, float]],
+) -> list[tuple[str, float]]:
+    merged = {date_key: close for date_key, close in existing_rows}
+    for date_key, close in fresh_rows:
+        merged[date_key] = close
+    return [(date_key, merged[date_key]) for date_key in sorted(merged)]
+
+
 def write_csv(path: Path, rows: list[tuple[str, float]]) -> None:
     unique_rows = []
     seen_dates = set()
@@ -502,8 +552,21 @@ def main() -> int:
     try:
         hs300_price = fetch_eastmoney_index("000300", market="1")
         hs300_total_return = fetch_csindex_total_return("H00300", HS300_TOTAL_RETURN_START, end_date)
-        usdcny = fetch_fred_series("DEXCHUS")
-        usdjpy = fetch_fred_series("DEXJPUS")
+        try:
+            usdcny = fetch_fred_series("DEXCHUS")
+            usdjpy = fetch_fred_series("DEXJPUS")
+            fx_source = "FRED DEXCHUS and DEXJPUS"
+        except Exception as fx_exc:
+            ecb_usdcny, ecb_usdjpy = fetch_ecb_usd_cross_rates()
+            if not ecb_usdcny or not ecb_usdjpy:
+                raise fx_exc
+            usdcny = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdcny.csv"), ecb_usdcny)
+            usdjpy = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdjpy.csv"), ecb_usdjpy)
+            print(
+                f"FRED FX fetch failed ({fx_exc}); fell back to ECB official USD cross rates.",
+                file=sys.stderr,
+            )
+            fx_source = "ECB official EXR cross rates fallback (merged with existing pre-1999 history)"
         nikkei_price = fetch_nikkei_price_history()
         nikkei_total_return = build_nikkei_total_return_history(nikkei_price)
     except Exception as exc:  # pragma: no cover - simple CLI script
@@ -531,7 +594,7 @@ def main() -> int:
         "Nikkei 225 total return source: Nikkei official daily CSV + monthly CSV + official monthly report anchors + "
         "pre-2012 calibrated backfill from official price history"
     )
-    print("FX sources: FRED DEXCHUS and DEXJPUS")
+    print(f"FX sources: {fx_source}")
     return 0
 
 
