@@ -1,6 +1,6 @@
 {
   "success": true,
-  "startedAt": "2026-04-21T00:03:43.392194+00:00",
+  "startedAt": "2026-04-21T23:58:43.392031+00:00",
   "refreshDate": "2026-04-21",
   "rootDir": ".",
   "tasks": [
@@ -14,10 +14,10 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 3.2,
+      "durationSeconds": 2.71,
       "stdout": [
-        "Wrote 39679 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
-        "Wrote 10216 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
+        "Wrote 39680 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
+        "Wrote 10217 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
       ],
       "stderr": [],
       "returnCode": 0,
@@ -26,10 +26,10 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 3.12,
+          "durationSeconds": 2.59,
           "stdout": [
-            "Wrote 39679 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
-            "Wrote 10216 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
+            "Wrote 39680 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
+            "Wrote 10217 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
           ],
           "stderr": [],
           "returnCode": 0
@@ -40,9 +40,9 @@
           "seriesId": "sp500_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 39679,
-          "end": "2026-04-20",
-          "stalenessDays": 1,
+          "rows": 39680,
+          "end": "2026-04-21",
+          "stalenessDays": 0,
           "file": "./web/data/sp500.csv",
           "maxStalenessDays": 7
         },
@@ -50,9 +50,9 @@
           "seriesId": "nasdaq100_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 10216,
-          "end": "2026-04-20",
-          "stalenessDays": 1,
+          "rows": 10217,
+          "end": "2026-04-21",
+          "stalenessDays": 0,
           "file": "./web/data/nasdaq100.csv",
           "maxStalenessDays": 7
         }
@@ -68,10 +68,10 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 0.8,
+      "durationSeconds": 0.82,
       "stdout": [
-        "Wrote 9646 rows to ./web/data/sp500-total-return.csv",
-        "Wrote 6820 rows to ./web/data/nasdaq100-total-return.csv",
+        "Wrote 9647 rows to ./web/data/sp500-total-return.csv",
+        "Wrote 6821 rows to ./web/data/nasdaq100-total-return.csv",
         "S&P 500 total return source: Yahoo Finance ^SP500TR (official S&P 500 TR concept maps to SPXT)",
         "Nasdaq-100 total return source: https://indexes.nasdaq.com/Index/History/XNDX"
       ],
@@ -82,10 +82,10 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 0.73,
+          "durationSeconds": 0.74,
           "stdout": [
-            "Wrote 9646 rows to ./web/data/sp500-total-return.csv",
-            "Wrote 6820 rows to ./web/data/nasdaq100-total-return.csv",
+            "Wrote 9647 rows to ./web/data/sp500-total-return.csv",
+            "Wrote 6821 rows to ./web/data/nasdaq100-total-return.csv",
             "S&P 500 total return source: Yahoo Finance ^SP500TR (official S&P 500 TR concept maps to SPXT)",
             "Nasdaq-100 total return source: https://indexes.nasdaq.com/Index/History/XNDX"
           ],
@@ -98,9 +98,9 @@
           "seriesId": "sp500_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 9646,
-          "end": "2026-04-20",
-          "stalenessDays": 1,
+          "rows": 9647,
+          "end": "2026-04-21",
+          "stalenessDays": 0,
           "file": "./web/data/sp500-total-return.csv",
           "maxStalenessDays": 7
         },
@@ -108,9 +108,9 @@
           "seriesId": "nasdaq100_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 6820,
-          "end": "2026-04-20",
-          "stalenessDays": 1,
+          "rows": 6821,
+          "end": "2026-04-21",
+          "stalenessDays": 0,
           "file": "./web/data/nasdaq100-total-return.csv",
           "maxStalenessDays": 7
         }
@@ -124,45 +124,45 @@
         "./backend/scripts/localize_scheme_b_data.py"
       ],
       "success": true,
-      "refreshSucceeded": true,
-      "usedCachedOutputs": false,
-      "durationSeconds": 11.32,
-      "stdout": [
-        "Wrote 5170 raw rows to ./web/data/hs300.csv",
-        "Wrote 5110 raw rows to ./web/data/hs300-total-return.csv",
-        "Wrote 11720 raw rows to ./web/data/nikkei225.csv",
-        "Wrote 11699 raw rows to ./web/data/nikkei225-total-return.csv",
-        "Wrote 11305 raw rows to ./web/data/usdcny.csv",
-        "Wrote 13859 raw rows to ./web/data/usdjpy.csv",
-        "HS300 price source: Eastmoney historical kline for 000300",
-        "HS300 total return source: CSI official H00300 history",
-        "Nikkei 225 price source: Nikkei official historical data page",
-        "Nikkei 225 total return source: Nikkei official daily CSV + monthly CSV + official monthly report anchors + pre-2012 calibrated backfill from official price history",
-        "FX sources: FRED DEXCHUS and DEXJPUS"
+      "refreshSucceeded": false,
+      "usedCachedOutputs": true,
+      "durationSeconds": 18.36,
+      "stdout": [],
+      "stderr": [
+        "Failed to localize scheme-B data: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
       ],
-      "stderr": [],
-      "returnCode": 0,
-      "attemptCount": 1,
+      "returnCode": 1,
+      "attemptCount": 3,
       "attempts": [
         {
           "attempt": 1,
-          "success": true,
-          "durationSeconds": 11.24,
-          "stdout": [
-            "Wrote 5170 raw rows to ./web/data/hs300.csv",
-            "Wrote 5110 raw rows to ./web/data/hs300-total-return.csv",
-            "Wrote 11720 raw rows to ./web/data/nikkei225.csv",
-            "Wrote 11699 raw rows to ./web/data/nikkei225-total-return.csv",
-            "Wrote 11305 raw rows to ./web/data/usdcny.csv",
-            "Wrote 13859 raw rows to ./web/data/usdjpy.csv",
-            "HS300 price source: Eastmoney historical kline for 000300",
-            "HS300 total return source: CSI official H00300 history",
-            "Nikkei 225 price source: Nikkei official historical data page",
-            "Nikkei 225 total return source: Nikkei official daily CSV + monthly CSV + official monthly report anchors + pre-2012 calibrated backfill from official price history",
-            "FX sources: FRED DEXCHUS and DEXJPUS"
+          "success": false,
+          "durationSeconds": 1.28,
+          "stdout": [],
+          "stderr": [
+            "Failed to localize scheme-B data: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
           ],
-          "stderr": [],
-          "returnCode": 0
+          "returnCode": 1
+        },
+        {
+          "attempt": 2,
+          "success": false,
+          "durationSeconds": 0.88,
+          "stdout": [],
+          "stderr": [
+            "Failed to localize scheme-B data: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+          ],
+          "returnCode": 1
+        },
+        {
+          "attempt": 3,
+          "success": false,
+          "durationSeconds": 0.84,
+          "stdout": [],
+          "stderr": [
+            "Failed to localize scheme-B data: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+          ],
+          "returnCode": 1
         }
       ],
       "outputHealth": [
@@ -226,36 +226,37 @@
           "file": "./web/data/usdjpy.csv",
           "maxStalenessDays": 10
         }
-      ]
+      ],
+      "warning": "Task scheme-b-localized failed after 3 attempts, but existing localized datasets are still fresh enough to keep using."
     }
   ],
   "series": {
     "sp500_price": {
       "exists": true,
-      "rows": 39679,
+      "rows": 39680,
       "start": "1789-05-01",
-      "end": "2026-04-20",
+      "end": "2026-04-21",
       "file": "./web/data/sp500.csv"
     },
     "sp500_total_return": {
       "exists": true,
-      "rows": 9646,
+      "rows": 9647,
       "start": "1988-01-04",
-      "end": "2026-04-20",
+      "end": "2026-04-21",
       "file": "./web/data/sp500-total-return.csv"
     },
     "nasdaq100_price": {
       "exists": true,
-      "rows": 10216,
+      "rows": 10217,
       "start": "1985-10-01",
-      "end": "2026-04-20",
+      "end": "2026-04-21",
       "file": "./web/data/nasdaq100.csv"
     },
     "nasdaq100_total_return": {
       "exists": true,
-      "rows": 6820,
+      "rows": 6821,
       "start": "1999-03-10",
-      "end": "2026-04-20",
+      "end": "2026-04-21",
       "file": "./web/data/nasdaq100-total-return.csv"
     },
     "hs300_price": {
@@ -301,7 +302,9 @@
       "file": "./web/data/usdjpy.csv"
     }
   },
-  "warnings": [],
-  "finishedAt": "2026-04-21T00:03:58.713561+00:00",
-  "durationSeconds": 15.32
+  "warnings": [
+    "Task scheme-b-localized failed after 3 attempts, but existing localized datasets are still fresh enough to keep using."
+  ],
+  "finishedAt": "2026-04-21T23:59:05.286734+00:00",
+  "durationSeconds": 21.89
 }
