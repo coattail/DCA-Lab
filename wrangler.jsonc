@@ -1,8 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "dcalab",
-  "pages_build_output_dir": "./web",
+  "name": "dca",
   "compatibility_date": "2025-09-27",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "web"
+  },
   "compatibility_flags": [
     "nodejs_compat"
   ]
