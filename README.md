@@ -100,6 +100,15 @@ python3 -m pip install -r requirements.txt
 - 刷新脚本会对上游抓取失败自动重试；如果某个源站短暂不可用，但仓库内现有本地数据仍在允许的新鲜度窗口内，工作流会保留现有数据并继续完成，而不是直接报错。
 - Cloudflare 直接部署需要在 GitHub 仓库 Secrets 中配置 `CLOUDFLARE_API_TOKEN` 与 `CLOUDFLARE_ACCOUNT_ID`。Token 需要具备 Cloudflare Pages 的编辑/部署权限。
 
+### Cloudflare 自动部署 Secrets
+
+在 GitHub 仓库的 `Settings > Secrets and variables > Actions` 中添加：
+
+- `CLOUDFLARE_ACCOUNT_ID`：Cloudflare 账号 ID
+- `CLOUDFLARE_API_TOKEN`：Cloudflare API Token，至少需要允许部署 Pages 项目 `dcalab`
+
+配置完成后，可在 GitHub Actions 手动运行 `Refresh Market Data` 验证。成功后，工作流会在每个工作日刷新数据并把最新 `web/` 目录部署到 Cloudflare Pages。
+
 ## 启动网页
 
 ```bash
