@@ -91,12 +91,14 @@ python3 -m pip install -r requirements.txt
 - 文件：`.github/workflows/refresh-data.yml`
 - 触发方式：手动触发 + 工作日自动触发
 - 调度时间：`23:30 UTC` 的周一到周五
+- Cloudflare Pages 部署：刷新完成后会把 `web/` 直接部署到 Cloudflare Pages 项目 `dcalab`
 
 说明：
 
 - GitHub Actions 的 `schedule` 使用 `UTC`；该时间点对应的是上一交易日美股收盘后，适合统一补齐标普500、纳斯达克100、沪深300、日经225与汇率数据。
 - 若遇到美国或其他市场休市，工作流仍会运行，但如果数据源没有新增记录，就不会产生新的提交。
 - 刷新脚本会对上游抓取失败自动重试；如果某个源站短暂不可用，但仓库内现有本地数据仍在允许的新鲜度窗口内，工作流会保留现有数据并继续完成，而不是直接报错。
+- Cloudflare 直接部署需要在 GitHub 仓库 Secrets 中配置 `CLOUDFLARE_API_TOKEN` 与 `CLOUDFLARE_ACCOUNT_ID`。Token 需要具备 Cloudflare Pages 的编辑/部署权限。
 
 ## 启动网页
 
