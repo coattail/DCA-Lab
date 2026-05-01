@@ -1,6 +1,6 @@
 {
   "success": true,
-  "startedAt": "2026-05-01T00:11:57.368112+00:00",
+  "startedAt": "2026-05-01T06:57:34.966413+00:00",
   "refreshDate": "2026-05-01",
   "rootDir": ".",
   "tasks": [
@@ -14,7 +14,7 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 1.97,
+      "durationSeconds": 2.03,
       "stdout": [
         "Wrote 39687 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
         "Wrote 10224 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
@@ -26,7 +26,7 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 1.87,
+          "durationSeconds": 1.91,
           "stdout": [
             "Wrote 39687 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
             "Wrote 10224 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
@@ -68,7 +68,7 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 1.09,
+      "durationSeconds": 0.71,
       "stdout": [
         "Wrote 9654 rows to ./web/data/sp500-total-return.csv",
         "Wrote 6828 rows to ./web/data/nasdaq100-total-return.csv",
@@ -82,7 +82,7 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 1.01,
+          "durationSeconds": 0.63,
           "stdout": [
             "Wrote 9654 rows to ./web/data/sp500-total-return.csv",
             "Wrote 6828 rows to ./web/data/nasdaq100-total-return.csv",
@@ -126,7 +126,7 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 40.04,
+      "durationSeconds": 12.22,
       "stdout": [
         "Wrote 5178 raw rows to ./web/data/hs300.csv",
         "Wrote 5118 raw rows to ./web/data/hs300-total-return.csv",
@@ -147,7 +147,7 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 39.96,
+          "durationSeconds": 12.13,
           "stdout": [
             "Wrote 5178 raw rows to ./web/data/hs300.csv",
             "Wrote 5118 raw rows to ./web/data/hs300-total-return.csv",
@@ -302,6 +302,6 @@
     }
   },
   "warnings": [],
-  "finishedAt": "2026-05-01T00:12:40.476940+00:00",
-  "durationSeconds": 43.11
+  "finishedAt": "2026-05-01T06:57:49.921444+00:00",
+  "durationSeconds": 14.96
 }
