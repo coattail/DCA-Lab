@@ -995,6 +995,39 @@ h3 {
   line-height: 1.6;
 }
 
+@media (min-width: 1241px) {
+  .overview-cards {
+    grid-template-columns: minmax(0, 1.42fr) minmax(0, 0.82fr) minmax(0, 0.7fr) minmax(0, 0.98fr);
+    align-items: stretch;
+  }
+
+  .overview-card--range {
+    grid-column: auto;
+  }
+
+  .overview-card {
+    min-width: 0;
+    padding: 14px;
+  }
+
+  .overview-card__value--date {
+    font-size: clamp(18px, 1.32vw, 24px);
+  }
+
+  .overview-card__value--money {
+    font-size: clamp(19px, 1.42vw, 25px);
+  }
+
+  .overview-card__value--number {
+    font-size: clamp(21px, 1.55vw, 26px);
+  }
+
+  .overview-card p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+}
+
 .chart-shell {
   position: relative;
   display: block;
