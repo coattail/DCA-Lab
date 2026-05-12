@@ -13,7 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+SC:wght@400;500;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260316-dca-studio-v44" />
+    <link rel="stylesheet" href="./styles.css?v=20260512-date-input-v1" />
   </head>
   <body>
     <div class="page-grid" aria-hidden="true"></div>
@@ -148,7 +148,17 @@
                   </div>
 
                   <div class="date-shell">
-                    <input id="start-date" type="date" />
+                    <input
+                      id="start-date"
+                      type="text"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="YYYY/MM/DD"
+                      aria-describedby="date-range-hint"
+                    />
+                    <input id="start-date-picker" class="date-picker-native" type="date" tabindex="-1" aria-hidden="true" />
+                    <button id="start-date-picker-button" class="date-picker-button" type="button" aria-label="打开日期选择器"></button>
                   </div>
 
                   <div class="preset-row">
@@ -277,6 +287,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=20260316-dca-studio-v46"></script>
+    <script src="./app.js?v=20260512-date-input-v1"></script>
   </body>
 </html>

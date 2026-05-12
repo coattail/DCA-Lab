@@ -268,6 +268,8 @@ async function init() {
 function cacheDom() {
   dom.assetInputs = Array.from(document.querySelectorAll("input[data-asset-id]"));
   dom.startDate = document.querySelector("#start-date");
+  dom.startDatePicker = document.querySelector("#start-date-picker");
+  dom.startDatePickerButton = document.querySelector("#start-date-picker-button");
   dom.amountInput = document.querySelector("#amount-input");
   dom.runButton = document.querySelector("#run-backtest");
   dom.dateRangeHint = document.querySelector("#date-range-hint");
@@ -338,10 +340,48 @@ function bindEvents() {
     });
   }
 
+  dom.startDate.addEventListener("input", () => {
+    state.ui.preset = null;
+    setActivePreset(null);
+  });
+
   dom.startDate.addEventListener("change", () => {
     state.ui.preset = null;
     setActivePreset(null);
+    commitStartDateInput();
     void rerunBacktest();
+  });
+
+  dom.startDate.addEventListener("blur", () => {
+    if (commitStartDateInput()) {
+      void rerunBacktest();
+    }
+  });
+
+  dom.startDate.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      dom.startDate.blur();
+    }
+  });
+
+  dom.startDatePicker.addEventListener("change", () => {
+    if (!dom.startDatePicker.value) return;
+    state.ui.preset = null;
+    setActivePreset(null);
+    setStartDateValue(dom.startDatePicker.value);
+    void rerunBacktest();
+  });
+
+  dom.startDatePickerButton.addEventListener("click", () => {
+    dom.startDatePicker.min = dom.startDate.dataset.minDate || "";
+    dom.startDatePicker.max = dom.startDate.dataset.maxDate || "";
+    dom.startDatePicker.value = normalizeDateInputValue(dom.startDate.value) || "";
+    if (typeof dom.startDatePicker.showPicker === "function") {
+      dom.startDatePicker.showPicker();
+      return;
+    }
+    dom.startDatePicker.focus();
   });
 
   dom.amountInput.addEventListener("change", () => {
@@ -388,6 +428,29 @@ function setActivePreset(value) {
   for (const button of dom.presetButtons) {
     button.classList.toggle("is-active", button.dataset.preset === value);
   }
+}
+
+function setStartDateValue(dateKey) {
+  dom.startDate.value = formatDateCompact(dateKey);
+  dom.startDate.dataset.dateKey = dateKey;
+  if (dom.startDatePicker) {
+    dom.startDatePicker.value = dateKey;
+  }
+}
+
+function commitStartDateInput() {
+  const normalized = normalizeDateInputValue(dom.startDate.value);
+  const previous = dom.startDate.dataset.dateKey || "";
+
+  if (!normalized) {
+    if (previous) {
+      setStartDateValue(previous);
+    }
+    return false;
+  }
+
+  setStartDateValue(normalized);
+  return normalized !== previous;
 }
 
 function syncQuickAmounts() {
@@ -847,7 +910,7 @@ function resolveStartDateKey(timeline, availableRange) {
   if (state.ui.preset) {
     candidateDate = resolvePresetDate(timeline, availableRange.end, state.ui.preset);
   } else if (dom.startDate.value) {
-    candidateDate = dom.startDate.value;
+    candidateDate = normalizeDateInputValue(dom.startDate.value);
   }
 
   if (!candidateDate) {
@@ -855,9 +918,13 @@ function resolveStartDateKey(timeline, availableRange) {
   }
 
   const clamped = findNearestAvailableDateKey(timeline, candidateDate);
-  dom.startDate.min = availableRange.start;
-  dom.startDate.max = availableRange.end;
-  dom.startDate.value = clamped;
+  dom.startDate.dataset.minDate = availableRange.start;
+  dom.startDate.dataset.maxDate = availableRange.end;
+  setStartDateValue(clamped);
+  if (dom.startDatePicker) {
+    dom.startDatePicker.min = availableRange.start;
+    dom.startDatePicker.max = availableRange.end;
+  }
   dom.dateRangeHint.textContent = `可选区间：${formatDateCompact(availableRange.start)} 至 ${formatDateCompact(
     availableRange.end,
   )}`;
@@ -2190,6 +2257,44 @@ function incrementDateKey(dateKey, dayOffset) {
 
 function formatDateCompact(dateKey) {
   return dateKey.replaceAll("-", "/");
+}
+
+function normalizeDateInputValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const compactDigits = /^\d+$/.test(raw) ? raw : "";
+  let year;
+  let month = 1;
+  let day = 1;
+
+  if (/^\d{4}$/.test(compactDigits)) {
+    year = Number(compactDigits);
+  } else if (/^\d{6}$/.test(compactDigits)) {
+    year = Number(compactDigits.slice(0, 4));
+    month = Number(compactDigits.slice(4, 6));
+  } else if (/^\d{8}$/.test(compactDigits)) {
+    year = Number(compactDigits.slice(0, 4));
+    month = Number(compactDigits.slice(4, 6));
+    day = Number(compactDigits.slice(6, 8));
+  } else {
+    const match = raw.match(/^(\d{4})[./\-\s年]+(\d{1,2})(?:[./\-\s月]+(\d{1,2})日?)?$/);
+    if (!match) return null;
+    year = Number(match[1]);
+    month = Number(match[2]);
+    day = Number(match[3] || 1);
+  }
+
+  const dateValue = new Date(Date.UTC(year, month - 1, day));
+  if (
+    dateValue.getUTCFullYear() !== year ||
+    dateValue.getUTCMonth() !== month - 1 ||
+    dateValue.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return toDateKey(dateValue);
 }
 
 function formatDateTimeCompact(value) {
