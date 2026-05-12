@@ -523,6 +523,27 @@ def merge_close_rows(
     return [(date_key, merged[date_key]) for date_key in sorted(merged)]
 
 
+def fetch_with_cache_fallback(
+    label: str,
+    target: Path,
+    fetcher,
+) -> tuple[list[tuple[str, float]], bool]:
+    try:
+        rows = fetcher()
+        if not rows:
+            raise RuntimeError(f"{label} source returned no rows")
+        return rows, False
+    except Exception as exc:
+        existing_rows = read_existing_csv_rows(target)
+        if existing_rows:
+            print(
+                f"{label} fetch failed ({exc}); reusing existing {target.name} with {len(existing_rows)} rows.",
+                file=sys.stderr,
+            )
+            return existing_rows, True
+        raise
+
+
 def write_csv(path: Path, rows: list[tuple[str, float]]) -> None:
     unique_rows = []
     seen_dates = set()
@@ -550,25 +571,56 @@ def main() -> int:
     end_date = date.today().isoformat()
 
     try:
-        hs300_price = fetch_eastmoney_index("000300", market="1")
-        hs300_total_return = fetch_csindex_total_return("H00300", HS300_TOTAL_RETURN_START, end_date)
+        hs300_price, hs300_price_cached = fetch_with_cache_fallback(
+            "HS300 price",
+            DATA_DIR / "hs300.csv",
+            lambda: fetch_eastmoney_index("000300", market="1"),
+        )
+        hs300_total_return, hs300_total_return_cached = fetch_with_cache_fallback(
+            "HS300 total return",
+            DATA_DIR / "hs300-total-return.csv",
+            lambda: fetch_csindex_total_return("H00300", HS300_TOTAL_RETURN_START, end_date),
+        )
         try:
             usdcny = fetch_fred_series("DEXCHUS")
             usdjpy = fetch_fred_series("DEXJPUS")
             fx_source = "FRED DEXCHUS and DEXJPUS"
+            fx_cached = False
         except Exception as fx_exc:
-            ecb_usdcny, ecb_usdjpy = fetch_ecb_usd_cross_rates()
-            if not ecb_usdcny or not ecb_usdjpy:
-                raise fx_exc
-            usdcny = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdcny.csv"), ecb_usdcny)
-            usdjpy = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdjpy.csv"), ecb_usdjpy)
-            print(
-                f"FRED FX fetch failed ({fx_exc}); fell back to ECB official USD cross rates.",
-                file=sys.stderr,
-            )
-            fx_source = "ECB official EXR cross rates fallback (merged with existing pre-1999 history)"
-        nikkei_price = fetch_nikkei_price_history()
-        nikkei_total_return = build_nikkei_total_return_history(nikkei_price)
+            try:
+                ecb_usdcny, ecb_usdjpy = fetch_ecb_usd_cross_rates()
+                if not ecb_usdcny or not ecb_usdjpy:
+                    raise RuntimeError("ECB official USD cross rates returned no rows")
+                usdcny = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdcny.csv"), ecb_usdcny)
+                usdjpy = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdjpy.csv"), ecb_usdjpy)
+                print(
+                    f"FRED FX fetch failed ({fx_exc}); fell back to ECB official USD cross rates.",
+                    file=sys.stderr,
+                )
+                fx_source = "ECB official EXR cross rates fallback (merged with existing pre-1999 history)"
+                fx_cached = False
+            except Exception as ecb_exc:
+                usdcny = read_existing_csv_rows(DATA_DIR / "usdcny.csv")
+                usdjpy = read_existing_csv_rows(DATA_DIR / "usdjpy.csv")
+                if not usdcny or not usdjpy:
+                    raise fx_exc
+                print(
+                    f"FRED FX fetch failed ({fx_exc}) and ECB FX fallback failed ({ecb_exc}); "
+                    "reusing existing FX datasets.",
+                    file=sys.stderr,
+                )
+                fx_source = "cached FX datasets after FRED and ECB were unavailable"
+                fx_cached = True
+        nikkei_price, nikkei_price_cached = fetch_with_cache_fallback(
+            "Nikkei 225 price",
+            DATA_DIR / "nikkei225.csv",
+            fetch_nikkei_price_history,
+        )
+        nikkei_total_return, nikkei_total_return_cached = fetch_with_cache_fallback(
+            "Nikkei 225 total return",
+            DATA_DIR / "nikkei225-total-return.csv",
+            lambda: build_nikkei_total_return_history(nikkei_price),
+        )
     except Exception as exc:  # pragma: no cover - simple CLI script
         print(f"Failed to localize scheme-B data: {exc}", file=sys.stderr)
         return 1
@@ -595,6 +647,19 @@ def main() -> int:
         "pre-2012 calibrated backfill from official price history"
     )
     print(f"FX sources: {fx_source}")
+    cached_labels = [
+        label
+        for label, used_cache in [
+            ("HS300 price", hs300_price_cached),
+            ("HS300 total return", hs300_total_return_cached),
+            ("Nikkei 225 price", nikkei_price_cached),
+            ("Nikkei 225 total return", nikkei_total_return_cached),
+            ("FX", fx_cached),
+        ]
+        if used_cache
+    ]
+    if cached_labels:
+        print(f"Used cached outputs for transiently unavailable sources: {', '.join(cached_labels)}")
     return 0
 
 

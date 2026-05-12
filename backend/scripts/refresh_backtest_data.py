@@ -173,6 +173,17 @@ def write_status(payload: dict) -> None:
     temp_path.replace(STATUS_PATH)
 
 
+def emit_attempt_log(task_id: str, attempt_payload: dict) -> None:
+    print(f"Task {task_id} attempt {attempt_payload['attempt']} failed with return code {attempt_payload['returnCode']}.")
+    for stream_name in ("stdout", "stderr"):
+        lines = attempt_payload.get(stream_name) or []
+        if not lines:
+            continue
+        print(f"--- {task_id} {stream_name} (last {len(lines)} lines) ---")
+        for line in lines:
+            print(line)
+
+
 def main() -> int:
     started_at = datetime.now().astimezone()
     status = {
@@ -243,6 +254,8 @@ def main() -> int:
                 write_status(status)
                 task_succeeded = True
                 break
+
+            emit_attempt_log(task["id"], attempt_payload)
 
             if attempt_number < MAX_TASK_ATTEMPTS:
                 time.sleep(RETRY_BACKOFF_SECONDS * attempt_number)

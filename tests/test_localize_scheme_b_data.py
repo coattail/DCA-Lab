@@ -1,5 +1,6 @@
 import importlib.util
 import pathlib
+import tempfile
 import unittest
 
 
@@ -63,6 +64,20 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2026-04-01,1.1605
                 ("2026-04-01", 6.87),
             ],
         )
+
+    def test_fetch_with_cache_fallback_reuses_existing_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target = pathlib.Path(temp_dir) / "cached.csv"
+            target.write_text("Date,Close\n2026-05-01,6.80\n", encoding="utf-8")
+
+            rows, used_cache = localize_scheme_b_data.fetch_with_cache_fallback(
+                "FX",
+                target,
+                lambda: (_ for _ in ()).throw(RuntimeError("upstream reset")),
+            )
+
+        self.assertTrue(used_cache)
+        self.assertEqual(rows, [("2026-05-01", 6.8)])
 
 
 if __name__ == "__main__":
