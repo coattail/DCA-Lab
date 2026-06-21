@@ -30,6 +30,15 @@ class RefreshWorkflowTests(unittest.TestCase):
         self.assertRegex(workflow, r"node-version:\s*\"24\"")
         self.assertIn("npx --yes wrangler@4 pages deploy web", workflow)
 
+    def test_refresh_workflow_deploys_github_pages_directly(self) -> None:
+        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertRegex(workflow, r"pages:\s*write")
+        self.assertRegex(workflow, r"id-token:\s*write")
+        self.assertIn("actions/configure-pages@v5", workflow)
+        self.assertIn("actions/upload-pages-artifact@v3", workflow)
+        self.assertIn("actions/deploy-pages@v4", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
