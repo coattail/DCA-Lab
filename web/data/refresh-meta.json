@@ -1,6 +1,6 @@
 {
   "success": true,
-  "startedAt": "2026-07-03T01:08:04.708776+00:00",
+  "startedAt": "2026-07-03T22:18:15.254073+08:00",
   "refreshDate": "2026-07-03",
   "rootDir": ".",
   "tasks": [
@@ -8,13 +8,13 @@
       "id": "market-price",
       "label": "美股价格数据",
       "command": [
-        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "/private/tmp/dca-lab-venv/bin/python",
         "./backend/scripts/localize_market_data.py"
       ],
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 2.39,
+      "durationSeconds": 16.27,
       "stdout": [
         "Wrote 39730 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
         "Wrote 10267 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
@@ -26,7 +26,7 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 2.25,
+          "durationSeconds": 16.22,
           "stdout": [
             "Wrote 39730 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
             "Wrote 10267 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
@@ -62,13 +62,13 @@
       "id": "us-total-return",
       "label": "标普500 / 纳指100 全收益",
       "command": [
-        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "/private/tmp/dca-lab-venv/bin/python",
         "./backend/scripts/localize_total_return_data.py"
       ],
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 1.64,
+      "durationSeconds": 4.13,
       "stdout": [
         "Wrote 9697 rows to ./web/data/sp500-total-return.csv",
         "Wrote 6871 rows to ./web/data/nasdaq100-total-return.csv",
@@ -82,7 +82,7 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 1.56,
+          "durationSeconds": 4.07,
           "stdout": [
             "Wrote 9697 rows to ./web/data/sp500-total-return.csv",
             "Wrote 6871 rows to ./web/data/nasdaq100-total-return.csv",
@@ -120,18 +120,18 @@
       "id": "scheme-b-localized",
       "label": "沪深300 / 日经225 / 汇率 / 方案B本地化",
       "command": [
-        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "/private/tmp/dca-lab-venv/bin/python",
         "./backend/scripts/localize_scheme_b_data.py"
       ],
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 12.6,
+      "durationSeconds": 14.8,
       "stdout": [
-        "Wrote 5219 raw rows to ./web/data/hs300.csv",
-        "Wrote 5159 raw rows to ./web/data/hs300-total-return.csv",
-        "Wrote 11769 raw rows to ./web/data/nikkei225.csv",
-        "Wrote 11748 raw rows to ./web/data/nikkei225-total-return.csv",
+        "Wrote 5220 raw rows to ./web/data/hs300.csv",
+        "Wrote 5160 raw rows to ./web/data/hs300-total-return.csv",
+        "Wrote 11770 raw rows to ./web/data/nikkei225.csv",
+        "Wrote 11749 raw rows to ./web/data/nikkei225-total-return.csv",
         "Wrote 11353 raw rows to ./web/data/usdcny.csv",
         "Wrote 13907 raw rows to ./web/data/usdjpy.csv",
         "HS300 price source: Eastmoney historical kline for 000300",
@@ -147,12 +147,12 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 12.51,
+          "durationSeconds": 14.75,
           "stdout": [
-            "Wrote 5219 raw rows to ./web/data/hs300.csv",
-            "Wrote 5159 raw rows to ./web/data/hs300-total-return.csv",
-            "Wrote 11769 raw rows to ./web/data/nikkei225.csv",
-            "Wrote 11748 raw rows to ./web/data/nikkei225-total-return.csv",
+            "Wrote 5220 raw rows to ./web/data/hs300.csv",
+            "Wrote 5160 raw rows to ./web/data/hs300-total-return.csv",
+            "Wrote 11770 raw rows to ./web/data/nikkei225.csv",
+            "Wrote 11749 raw rows to ./web/data/nikkei225-total-return.csv",
             "Wrote 11353 raw rows to ./web/data/usdcny.csv",
             "Wrote 13907 raw rows to ./web/data/usdjpy.csv",
             "HS300 price source: Eastmoney historical kline for 000300",
@@ -170,9 +170,9 @@
           "seriesId": "hs300_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 5219,
-          "end": "2026-07-02",
-          "stalenessDays": 1,
+          "rows": 5220,
+          "end": "2026-07-03",
+          "stalenessDays": 0,
           "file": "./web/data/hs300.csv",
           "maxStalenessDays": 7
         },
@@ -180,9 +180,9 @@
           "seriesId": "hs300_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 5159,
-          "end": "2026-07-02",
-          "stalenessDays": 1,
+          "rows": 5160,
+          "end": "2026-07-03",
+          "stalenessDays": 0,
           "file": "./web/data/hs300-total-return.csv",
           "maxStalenessDays": 7
         },
@@ -190,9 +190,9 @@
           "seriesId": "nikkei225_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 11769,
-          "end": "2026-07-02",
-          "stalenessDays": 1,
+          "rows": 11770,
+          "end": "2026-07-03",
+          "stalenessDays": 0,
           "file": "./web/data/nikkei225.csv",
           "maxStalenessDays": 7
         },
@@ -200,9 +200,9 @@
           "seriesId": "nikkei225_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 11747,
-          "end": "2026-07-02",
-          "stalenessDays": 1,
+          "rows": 11748,
+          "end": "2026-07-03",
+          "stalenessDays": 0,
           "file": "./web/data/nikkei225-total-return.csv",
           "maxStalenessDays": 7
         },
@@ -260,30 +260,30 @@
     },
     "hs300_price": {
       "exists": true,
-      "rows": 5219,
+      "rows": 5220,
       "start": "2005-01-04",
-      "end": "2026-07-02",
+      "end": "2026-07-03",
       "file": "./web/data/hs300.csv"
     },
     "hs300_total_return": {
       "exists": true,
-      "rows": 5159,
+      "rows": 5160,
       "start": "2005-04-08",
-      "end": "2026-07-02",
+      "end": "2026-07-03",
       "file": "./web/data/hs300-total-return.csv"
     },
     "nikkei225_price": {
       "exists": true,
-      "rows": 11769,
+      "rows": 11770,
       "start": "1979-12-01",
-      "end": "2026-07-02",
+      "end": "2026-07-03",
       "file": "./web/data/nikkei225.csv"
     },
     "nikkei225_total_return": {
       "exists": true,
-      "rows": 11747,
+      "rows": 11748,
       "start": "1979-12-28",
-      "end": "2026-07-02",
+      "end": "2026-07-03",
       "file": "./web/data/nikkei225-total-return.csv"
     },
     "usdcny": {
@@ -302,6 +302,6 @@
     }
   },
   "warnings": [],
-  "finishedAt": "2026-07-03T01:08:21.342847+00:00",
-  "durationSeconds": 16.63
+  "finishedAt": "2026-07-03T22:18:50.462953+08:00",
+  "durationSeconds": 35.21
 }
