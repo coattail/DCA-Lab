@@ -1,7 +1,7 @@
 {
   "success": true,
-  "startedAt": "2026-07-21T00:56:20.685120+00:00",
-  "refreshDate": "2026-07-21",
+  "startedAt": "2026-07-22T00:13:49.078497+00:00",
+  "refreshDate": "2026-07-22",
   "rootDir": ".",
   "tasks": [
     {
@@ -14,10 +14,10 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 2.89,
+      "durationSeconds": 1.78,
       "stdout": [
-        "Wrote 39741 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
-        "Wrote 10278 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
+        "Wrote 39742 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
+        "Wrote 10279 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
       ],
       "stderr": [],
       "returnCode": 0,
@@ -26,10 +26,10 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 2.81,
+          "durationSeconds": 1.57,
           "stdout": [
-            "Wrote 39741 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
-            "Wrote 10278 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
+            "Wrote 39742 rows to ./web/data/sp500.csv via Yahoo Finance fallback",
+            "Wrote 10279 rows to ./web/data/nasdaq100.csv via Yahoo Finance fallback"
           ],
           "stderr": [],
           "returnCode": 0
@@ -40,8 +40,8 @@
           "seriesId": "sp500_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 39741,
-          "end": "2026-07-20",
+          "rows": 39742,
+          "end": "2026-07-21",
           "stalenessDays": 1,
           "file": "./web/data/sp500.csv",
           "maxStalenessDays": 7
@@ -50,8 +50,8 @@
           "seriesId": "nasdaq100_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 10278,
-          "end": "2026-07-20",
+          "rows": 10279,
+          "end": "2026-07-21",
           "stalenessDays": 1,
           "file": "./web/data/nasdaq100.csv",
           "maxStalenessDays": 7
@@ -68,10 +68,10 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 0.75,
+      "durationSeconds": 0.53,
       "stdout": [
-        "Wrote 9708 rows to ./web/data/sp500-total-return.csv",
-        "Wrote 6882 rows to ./web/data/nasdaq100-total-return.csv",
+        "Wrote 9709 rows to ./web/data/sp500-total-return.csv",
+        "Wrote 6883 rows to ./web/data/nasdaq100-total-return.csv",
         "S&P 500 total return source: Yahoo Finance ^SP500TR (official S&P 500 TR concept maps to SPXT)",
         "Nasdaq-100 total return source: https://indexes.nasdaq.com/Index/History/XNDX"
       ],
@@ -82,10 +82,10 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 0.68,
+          "durationSeconds": 0.45,
           "stdout": [
-            "Wrote 9708 rows to ./web/data/sp500-total-return.csv",
-            "Wrote 6882 rows to ./web/data/nasdaq100-total-return.csv",
+            "Wrote 9709 rows to ./web/data/sp500-total-return.csv",
+            "Wrote 6883 rows to ./web/data/nasdaq100-total-return.csv",
             "S&P 500 total return source: Yahoo Finance ^SP500TR (official S&P 500 TR concept maps to SPXT)",
             "Nasdaq-100 total return source: https://indexes.nasdaq.com/Index/History/XNDX"
           ],
@@ -98,8 +98,8 @@
           "seriesId": "sp500_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 9708,
-          "end": "2026-07-20",
+          "rows": 9709,
+          "end": "2026-07-21",
           "stalenessDays": 1,
           "file": "./web/data/sp500-total-return.csv",
           "maxStalenessDays": 7
@@ -108,8 +108,8 @@
           "seriesId": "nasdaq100_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 6882,
-          "end": "2026-07-20",
+          "rows": 6883,
+          "end": "2026-07-21",
           "stalenessDays": 1,
           "file": "./web/data/nasdaq100-total-return.csv",
           "maxStalenessDays": 7
@@ -126,12 +126,12 @@
       "success": true,
       "refreshSucceeded": true,
       "usedCachedOutputs": false,
-      "durationSeconds": 7.96,
+      "durationSeconds": 9.09,
       "stdout": [
-        "Wrote 5231 raw rows to ./web/data/hs300.csv",
-        "Wrote 5171 raw rows to ./web/data/hs300-total-return.csv",
-        "Wrote 11780 raw rows to ./web/data/nikkei225.csv",
-        "Wrote 11759 raw rows to ./web/data/nikkei225-total-return.csv",
+        "Wrote 5232 raw rows to ./web/data/hs300.csv",
+        "Wrote 5172 raw rows to ./web/data/hs300-total-return.csv",
+        "Wrote 11781 raw rows to ./web/data/nikkei225.csv",
+        "Wrote 11760 raw rows to ./web/data/nikkei225-total-return.csv",
         "Wrote 11367 raw rows to ./web/data/usdcny.csv",
         "Wrote 13921 raw rows to ./web/data/usdjpy.csv",
         "HS300 price source: Eastmoney historical kline for 000300",
@@ -147,12 +147,12 @@
         {
           "attempt": 1,
           "success": true,
-          "durationSeconds": 7.88,
+          "durationSeconds": 8.99,
           "stdout": [
-            "Wrote 5231 raw rows to ./web/data/hs300.csv",
-            "Wrote 5171 raw rows to ./web/data/hs300-total-return.csv",
-            "Wrote 11780 raw rows to ./web/data/nikkei225.csv",
-            "Wrote 11759 raw rows to ./web/data/nikkei225-total-return.csv",
+            "Wrote 5232 raw rows to ./web/data/hs300.csv",
+            "Wrote 5172 raw rows to ./web/data/hs300-total-return.csv",
+            "Wrote 11781 raw rows to ./web/data/nikkei225.csv",
+            "Wrote 11760 raw rows to ./web/data/nikkei225-total-return.csv",
             "Wrote 11367 raw rows to ./web/data/usdcny.csv",
             "Wrote 13921 raw rows to ./web/data/usdjpy.csv",
             "HS300 price source: Eastmoney historical kline for 000300",
@@ -170,8 +170,8 @@
           "seriesId": "hs300_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 5231,
-          "end": "2026-07-20",
+          "rows": 5232,
+          "end": "2026-07-21",
           "stalenessDays": 1,
           "file": "./web/data/hs300.csv",
           "maxStalenessDays": 7
@@ -180,8 +180,8 @@
           "seriesId": "hs300_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 5171,
-          "end": "2026-07-20",
+          "rows": 5172,
+          "end": "2026-07-21",
           "stalenessDays": 1,
           "file": "./web/data/hs300-total-return.csv",
           "maxStalenessDays": 7
@@ -190,9 +190,9 @@
           "seriesId": "nikkei225_price",
           "ok": true,
           "reason": "fresh",
-          "rows": 11780,
-          "end": "2026-07-17",
-          "stalenessDays": 4,
+          "rows": 11781,
+          "end": "2026-07-21",
+          "stalenessDays": 1,
           "file": "./web/data/nikkei225.csv",
           "maxStalenessDays": 7
         },
@@ -200,9 +200,9 @@
           "seriesId": "nikkei225_total_return",
           "ok": true,
           "reason": "fresh",
-          "rows": 11758,
-          "end": "2026-07-17",
-          "stalenessDays": 4,
+          "rows": 11759,
+          "end": "2026-07-21",
+          "stalenessDays": 1,
           "file": "./web/data/nikkei225-total-return.csv",
           "maxStalenessDays": 7
         },
@@ -212,7 +212,7 @@
           "reason": "fresh",
           "rows": 11367,
           "end": "2026-07-17",
-          "stalenessDays": 4,
+          "stalenessDays": 5,
           "file": "./web/data/usdcny.csv",
           "maxStalenessDays": 10
         },
@@ -222,7 +222,7 @@
           "reason": "fresh",
           "rows": 13921,
           "end": "2026-07-17",
-          "stalenessDays": 4,
+          "stalenessDays": 5,
           "file": "./web/data/usdjpy.csv",
           "maxStalenessDays": 10
         }
@@ -232,58 +232,58 @@
   "series": {
     "sp500_price": {
       "exists": true,
-      "rows": 39741,
+      "rows": 39742,
       "start": "1789-05-01",
-      "end": "2026-07-20",
+      "end": "2026-07-21",
       "file": "./web/data/sp500.csv"
     },
     "sp500_total_return": {
       "exists": true,
-      "rows": 9708,
+      "rows": 9709,
       "start": "1988-01-04",
-      "end": "2026-07-20",
+      "end": "2026-07-21",
       "file": "./web/data/sp500-total-return.csv"
     },
     "nasdaq100_price": {
       "exists": true,
-      "rows": 10278,
+      "rows": 10279,
       "start": "1985-10-01",
-      "end": "2026-07-20",
+      "end": "2026-07-21",
       "file": "./web/data/nasdaq100.csv"
     },
     "nasdaq100_total_return": {
       "exists": true,
-      "rows": 6882,
+      "rows": 6883,
       "start": "1999-03-10",
-      "end": "2026-07-20",
+      "end": "2026-07-21",
       "file": "./web/data/nasdaq100-total-return.csv"
     },
     "hs300_price": {
       "exists": true,
-      "rows": 5231,
+      "rows": 5232,
       "start": "2005-01-04",
-      "end": "2026-07-20",
+      "end": "2026-07-21",
       "file": "./web/data/hs300.csv"
     },
     "hs300_total_return": {
       "exists": true,
-      "rows": 5171,
+      "rows": 5172,
       "start": "2005-04-08",
-      "end": "2026-07-20",
+      "end": "2026-07-21",
       "file": "./web/data/hs300-total-return.csv"
     },
     "nikkei225_price": {
       "exists": true,
-      "rows": 11780,
+      "rows": 11781,
       "start": "1979-12-01",
-      "end": "2026-07-17",
+      "end": "2026-07-21",
       "file": "./web/data/nikkei225.csv"
     },
     "nikkei225_total_return": {
       "exists": true,
-      "rows": 11758,
+      "rows": 11759,
       "start": "1979-12-28",
-      "end": "2026-07-17",
+      "end": "2026-07-21",
       "file": "./web/data/nikkei225-total-return.csv"
     },
     "usdcny": {
@@ -302,6 +302,6 @@
     }
   },
   "warnings": [],
-  "finishedAt": "2026-07-21T00:56:32.298003+00:00",
-  "durationSeconds": 11.61
+  "finishedAt": "2026-07-22T00:14:00.483451+00:00",
+  "durationSeconds": 11.4
 }
