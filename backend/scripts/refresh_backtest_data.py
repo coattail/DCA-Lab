@@ -2,11 +2,15 @@
 
 import csv
 import json
+import os
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
+
+from data_health import SERIES_MAX_STALENESS_DAYS
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -52,19 +56,6 @@ SERIES_FILES = {
     "nikkei225_total_return": DATA_DIR / "nikkei225-total-return.csv",
     "usdcny": DATA_DIR / "usdcny.csv",
     "usdjpy": DATA_DIR / "usdjpy.csv",
-}
-
-SERIES_MAX_STALENESS_DAYS = {
-    "sp500_price": 7,
-    "sp500_total_return": 7,
-    "nasdaq100_price": 7,
-    "nasdaq100_total_return": 7,
-    "hs300_price": 7,
-    "hs300_total_return": 7,
-    "nikkei225_price": 7,
-    "nikkei225_total_return": 7,
-    "usdcny": 10,
-    "usdjpy": 10,
 }
 
 MAX_TASK_ATTEMPTS = 3
@@ -142,7 +133,13 @@ def assess_series_health(series_id: str, coverage: dict, reference_date) -> dict
             "maxStalenessDays": max_staleness_days,
         }
 
-    end_date = datetime.strptime(end, "%Y-%m-%d").date()
+    try:
+        end_date = datetime.strptime(end, "%Y-%m-%d").date()
+        if end_date > reference_date:
+            raise ValueError("future date")
+    except (ValueError, TypeError):
+        return {"seriesId": series_id, "ok": False, "reason": "invalid-date",
+                "end": end, "file": coverage.get("file"), "maxStalenessDays": max_staleness_days}
     staleness_days = max(0, (reference_date - end_date).days)
     ok = staleness_days <= max_staleness_days
     return {
@@ -171,6 +168,36 @@ def write_status(payload: dict) -> None:
     temp_path = STATUS_PATH.with_suffix(STATUS_PATH.suffix + ".tmp")
     temp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     temp_path.replace(STATUS_PATH)
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary_path:
+        lines = ["## Market data refresh", "", f"Success: {payload['success']}", "",
+                 "| Dataset | Latest date | Age (days) | Limit | Health |",
+                 "| --- | --- | --- | --- | --- |"]
+        for task in payload["tasks"]:
+            for check in task.get("outputHealth", []):
+                lines.append(f"| {check['seriesId']} | {check.get('end', '—')} | {check.get('stalenessDays', '—')} | {check['maxStalenessDays']} | {check['reason']} |")
+        lines.extend(["", *payload.get("warnings", [])])
+        Path(summary_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def run_refresh_command(command):
+    with tempfile.TemporaryDirectory(prefix="dca-refresh-") as temp_dir:
+        report_path = Path(temp_dir) / "source-report.json"
+        result = subprocess.run(
+            command, cwd=ROOT_DIR, capture_output=True, text=True,
+            env={**os.environ, "DCA_REFRESH_REPORT_PATH": str(report_path)},
+        )
+        report = json.loads(report_path.read_text()) if report_path.exists() else {}
+        return result, report
+
+
+def describe_unhealthy_outputs(output_health):
+    return [
+        f"{item['seriesId']}: {item['reason']}; file={item.get('file', 'missing')}; "
+        f"latest={item.get('end', 'unknown')}; age={item.get('stalenessDays', 'unknown')} days; "
+        f"limit={item['maxStalenessDays']} days"
+        for item in output_health["series"] if not item["ok"]
+    ]
 
 
 def emit_attempt_log(task_id: str, attempt_payload: dict) -> None:
@@ -204,12 +231,7 @@ def main() -> int:
 
         for attempt_number in range(1, MAX_TASK_ATTEMPTS + 1):
             attempt_started_at = time.time()
-            result = subprocess.run(
-                task["command"],
-                cwd=ROOT_DIR,
-                capture_output=True,
-                text=True,
-            )
+            result, source_report = run_refresh_command(task["command"])
             attempt_finished_at = time.time()
 
             attempt_payload = {
@@ -226,13 +248,19 @@ def main() -> int:
                 attempt_payload["success"] = False
                 attempt_payload["stderr"] = [
                     *attempt_payload["stderr"],
-                    "Command exited successfully, but one or more output datasets are missing or too stale.",
+                    "Command exited successfully, but output health checks failed:",
+                    *describe_unhealthy_outputs(output_health),
                 ]
                 attempt_payload["returnCode"] = 1
 
             attempts.append(attempt_payload)
 
             if attempt_payload["success"]:
+                cached_series = source_report.get("cachedSeries", [])
+                if cached_series:
+                    warning = f"Task {task['id']} reused cached outputs: {', '.join(cached_series)}"
+                    status["warnings"].append(warning)
+                    print(f"::warning::{warning}")
                 task_finished_at = time.time()
                 status["tasks"].append(
                     {
@@ -240,8 +268,9 @@ def main() -> int:
                         "label": task["label"],
                         "command": command_for_status(task["command"]),
                         "success": True,
-                        "refreshSucceeded": True,
-                        "usedCachedOutputs": False,
+                        "refreshSucceeded": not bool(cached_series),
+                        "usedCachedOutputs": bool(cached_series),
+                        "cachedSeries": cached_series,
                         "durationSeconds": round(task_finished_at - task_started_at, 2),
                         "stdout": attempt_payload["stdout"],
                         "stderr": attempt_payload["stderr"],
@@ -293,6 +322,8 @@ def main() -> int:
             write_status(status)
             continue
 
+        for diagnostic in describe_unhealthy_outputs(output_health):
+            print(f"::error::{diagnostic}")
         status["tasks"].append(task_payload)
         status["finishedAt"] = datetime.now().astimezone().isoformat()
         status["series"] = collect_series_coverage()

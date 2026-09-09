@@ -17,6 +17,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: github-pages
       url: ${{ steps.github_pages_deployment.outputs.page_url }}
@@ -35,8 +36,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run refresh regression tests
+        run: python -m unittest discover -s tests -v
+
       - name: Refresh localized datasets
         run: python backend/scripts/refresh_backtest_data.py
+
+      - name: Upload refresh diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refresh-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: web/data/refresh-meta.json
+          retention-days: 14
+          if-no-files-found: warn
 
       # Deploy before pushing the refreshed files. Pushing first makes the
       # workflow's original commit stale and Pages rejects that deployment.

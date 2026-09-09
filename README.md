@@ -20,6 +20,7 @@
 
 - `^SPX`（S&P 500）：`https://stooq.com/q/d/l/?s=^spx&i=d`
 - `^NDX`（Nasdaq 100）：`https://stooq.com/q/d/l/?s=^ndx&i=d`
+- `000300`（沪深300）：东方财富历史行情；请求失败、返回空数据或数据过期时，切换中证指数官方 `000300` 历史接口，并保留已有历史记录。
 
 本地文件：
 
@@ -91,13 +92,17 @@ python3 -m pip install -r requirements.txt
 - 文件：`.github/workflows/refresh-data.yml`
 - 触发方式：手动触发 + 工作日自动触发
 - 调度时间：`23:30 UTC` 的周一到周五
-- 部署：刷新完成后会提交最新数据；`main` 分支推送会触发 GitHub Pages 部署。如果已配置 Cloudflare Secrets，也会额外把 `web/` 直接部署到 Cloudflare Pages 项目 `dcalab`
+- 部署：刷新完成并通过健康检查后，先在本次工作流部署 GitHub Pages，再提交最新数据（避免提交变化导致 Pages 拒绝部署）。普通 `main` 分支推送另由部署工作流处理。如果已配置 Cloudflare Secrets，也会额外把 `web/` 直接部署到 Cloudflare Pages 项目 `dcalab`
 
 说明：
 
 - GitHub Actions 的 `schedule` 使用 `UTC`；该时间点对应的是上一交易日美股收盘后，适合统一补齐标普500、纳斯达克100、沪深300、日经225与汇率数据。
 - 若遇到美国或其他市场休市，工作流仍会运行，但如果数据源没有新增记录，就不会产生新的提交。
 - 刷新脚本会对上游抓取失败自动重试；如果某个源站短暂不可用，但仓库内现有本地数据仍在允许的新鲜度窗口内，工作流会保留现有数据并继续完成，而不是直接报错。
+- FRED 汇率即使 HTTP 请求成功，也会检查最新观测日期；为空、无效或超过 10 天时，会尝试 ECB 官方美元交叉汇率。ECB 只补充较新的尾部日期，不覆盖已有历史；FRED 恢复更新后优先采用 FRED 观测值。
+- 源站选择与发布前检查共享时效阈值：指数 7 天、汇率 10 天。所有源都失效时，仅允许仍在阈值内的缓存；方案 B 的缓存使用会写入状态和告警，过期数据仍会阻止发布。
+- 每次刷新前运行回归测试；修改脚本、测试或工作流时，也会自动运行 `Test Market Data Refresh`。本地运行：`python3 -m unittest discover -s tests -v`。
+- Actions 摘要会列出每份数据的最新日期、滞后天数和健康状态；诊断附件 `refresh-diagnostics-<run_id>-<attempt>` 保留 14 天，失败时也会上传 `refresh-meta.json`。可先查看摘要中的 `stale` / `missing`，再下载附件查看源站错误与重试记录。
 - Cloudflare 直接部署是可选增强：未配置 `CLOUDFLARE_API_TOKEN` 与 `CLOUDFLARE_ACCOUNT_ID` 时，工作流会跳过 Cloudflare 部署，但数据刷新、提交与 GitHub Pages 部署仍可正常完成。
 
 ### Cloudflare 自动部署 Secrets

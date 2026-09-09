@@ -1,11 +1,13 @@
 import importlib.util
 import pathlib
 import tempfile
+import sys
 import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "backend" / "scripts" / "localize_scheme_b_data.py"
+sys.path.insert(0, str(MODULE_PATH.parent))
 SPEC = importlib.util.spec_from_file_location("localize_scheme_b_data", MODULE_PATH)
 localize_scheme_b_data = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None

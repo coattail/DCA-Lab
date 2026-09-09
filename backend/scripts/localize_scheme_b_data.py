@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import csv
+import json
 import math
+import os
 import re
 import subprocess
 import sys
@@ -13,6 +15,8 @@ from pathlib import Path
 from typing import Optional
 
 import requests
+
+from data_health import validate_source_rows
 
 try:
     import cloudscraper
@@ -198,6 +202,64 @@ def fetch_eastmoney_index(index_code: str, market: str) -> list[tuple[str, float
             continue
         rows.append((normalize_date_key(parts[0]), float(parts[2])))
     return rows
+
+
+def fetch_hs300_price() -> tuple[list[tuple[str, float]], str]:
+    existing = read_existing_csv_rows(DATA_DIR / "hs300.csv")
+    sources = [
+        ("Eastmoney historical kline for 000300", lambda: fetch_eastmoney_index("000300", market="1")),
+        ("CSI official 000300 history", lambda: fetch_csindex_total_return("000300", "2005-01-04", date.today().isoformat())),
+    ]
+    errors = []
+    for label, fetcher in sources:
+        try:
+            rows = validate_source_rows(fetcher(), "hs300_price")
+            # A backup may expose a shorter window than the checked-in history.
+            return merge_close_rows(existing, rows), label
+        except Exception as exc:
+            errors.append(f"{label}: {exc}")
+            print(f"HS300 source unavailable or unhealthy: {errors[-1]}", file=sys.stderr)
+    raise RuntimeError("; ".join(errors))
+
+
+def fetch_fx_history() -> tuple[list, list, str, bool]:
+    pairs = [("usdcny", "DEXCHUS"), ("usdjpy", "DEXJPUS")]
+    histories = {}
+    errors = []
+    for series_id, fred_id in pairs:
+        existing = read_existing_csv_rows(DATA_DIR / f"{series_id}.csv")
+        try:
+            rows = fetch_fred_series(fred_id)
+            # Retain valid FRED observations even if their latest date is too old.
+            validate_source_rows(rows, series_id, require_fresh=False)
+            histories[series_id] = merge_close_rows(existing, rows)
+            validate_source_rows(rows, series_id)
+        except Exception as exc:
+            errors.append(f"{fred_id}: {exc}")
+            histories.setdefault(series_id, existing)
+
+    if not errors:
+        return histories["usdcny"], histories["usdjpy"], "FRED DEXCHUS and DEXJPUS", False
+
+    try:
+        ecb_pairs = fetch_ecb_usd_cross_rates()
+        for (series_id, _), rows in zip(pairs, ecb_pairs):
+            validate_source_rows(rows, series_id)
+        for (series_id, _), rows in zip(pairs, ecb_pairs):
+            # ECB fixes at a different time. Only extend the tail, preserving
+            # historical observations and the pre-1999 FRED coverage.
+            latest = max((day for day, _ in histories[series_id]), default="")
+            histories[series_id] = merge_close_rows(
+                histories[series_id], [row for row in rows if row[0] > latest]
+            )
+        print(f"FRED FX unavailable or stale ({'; '.join(errors)}); extended with ECB official cross rates.", file=sys.stderr)
+        return histories["usdcny"], histories["usdjpy"], "FRED history + ECB official EXR tail fallback", False
+    except Exception as exc:
+        # The orchestrator still rejects cached files beyond the shared limits.
+        if not all(histories.values()):
+            raise RuntimeError(f"FRED FX failed ({'; '.join(errors)}); ECB fallback failed ({exc})") from exc
+        print(f"FRED FX unavailable or stale ({'; '.join(errors)}); ECB fallback failed ({exc}); using cached FX outputs.", file=sys.stderr)
+        return histories["usdcny"], histories["usdjpy"], "cached FX datasets after source failure", True
 
 
 def fetch_nikkei_price_history() -> list[tuple[str, float]]:
@@ -571,46 +633,24 @@ def main() -> int:
     end_date = date.today().isoformat()
 
     try:
+        hs300_price_source = "cached HS300 price dataset"
+
+        def load_hs300():
+            nonlocal hs300_price_source
+            rows, hs300_price_source = fetch_hs300_price()
+            return rows
+
         hs300_price, hs300_price_cached = fetch_with_cache_fallback(
             "HS300 price",
             DATA_DIR / "hs300.csv",
-            lambda: fetch_eastmoney_index("000300", market="1"),
+            load_hs300,
         )
         hs300_total_return, hs300_total_return_cached = fetch_with_cache_fallback(
             "HS300 total return",
             DATA_DIR / "hs300-total-return.csv",
             lambda: fetch_csindex_total_return("H00300", HS300_TOTAL_RETURN_START, end_date),
         )
-        try:
-            usdcny = fetch_fred_series("DEXCHUS")
-            usdjpy = fetch_fred_series("DEXJPUS")
-            fx_source = "FRED DEXCHUS and DEXJPUS"
-            fx_cached = False
-        except Exception as fx_exc:
-            try:
-                ecb_usdcny, ecb_usdjpy = fetch_ecb_usd_cross_rates()
-                if not ecb_usdcny or not ecb_usdjpy:
-                    raise RuntimeError("ECB official USD cross rates returned no rows")
-                usdcny = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdcny.csv"), ecb_usdcny)
-                usdjpy = merge_close_rows(read_existing_csv_rows(DATA_DIR / "usdjpy.csv"), ecb_usdjpy)
-                print(
-                    f"FRED FX fetch failed ({fx_exc}); fell back to ECB official USD cross rates.",
-                    file=sys.stderr,
-                )
-                fx_source = "ECB official EXR cross rates fallback (merged with existing pre-1999 history)"
-                fx_cached = False
-            except Exception as ecb_exc:
-                usdcny = read_existing_csv_rows(DATA_DIR / "usdcny.csv")
-                usdjpy = read_existing_csv_rows(DATA_DIR / "usdjpy.csv")
-                if not usdcny or not usdjpy:
-                    raise fx_exc
-                print(
-                    f"FRED FX fetch failed ({fx_exc}) and ECB FX fallback failed ({ecb_exc}); "
-                    "reusing existing FX datasets.",
-                    file=sys.stderr,
-                )
-                fx_source = "cached FX datasets after FRED and ECB were unavailable"
-                fx_cached = True
+        usdcny, usdjpy, fx_source, fx_cached = fetch_fx_history()
         nikkei_price, nikkei_price_cached = fetch_with_cache_fallback(
             "Nikkei 225 price",
             DATA_DIR / "nikkei225.csv",
@@ -639,7 +679,7 @@ def main() -> int:
         write_csv(target, rows)
         print(f"Wrote {len(rows)} raw rows to {target}")
 
-    print("HS300 price source: Eastmoney historical kline for 000300")
+    print(f"HS300 price source: {hs300_price_source}")
     print("HS300 total return source: CSI official H00300 history")
     print("Nikkei 225 price source: Nikkei official historical data page")
     print(
@@ -658,6 +698,18 @@ def main() -> int:
         ]
         if used_cache
     ]
+    report_path = os.environ.get("DCA_REFRESH_REPORT_PATH")
+    if report_path:
+        cached_series = [
+            series_id for series_id, cached in [
+                ("hs300_price", hs300_price_cached),
+                ("hs300_total_return", hs300_total_return_cached),
+                ("nikkei225_price", nikkei_price_cached),
+                ("nikkei225_total_return", nikkei_total_return_cached),
+                ("usdcny", fx_cached), ("usdjpy", fx_cached),
+            ] if cached
+        ]
+        Path(report_path).write_text(json.dumps({"cachedSeries": cached_series}), encoding="utf-8")
     if cached_labels:
         print(f"Used cached outputs for transiently unavailable sources: {', '.join(cached_labels)}")
     return 0
