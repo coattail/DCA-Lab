@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from data_health import SERIES_MAX_STALENESS_DAYS
+from data_health import SERIES_MAX_STALENESS_DAYS, freshness_policy
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -140,17 +140,15 @@ def assess_series_health(series_id: str, coverage: dict, reference_date) -> dict
     except (ValueError, TypeError):
         return {"seriesId": series_id, "ok": False, "reason": "invalid-date",
                 "end": end, "file": coverage.get("file"), "maxStalenessDays": max_staleness_days}
-    staleness_days = max(0, (reference_date - end_date).days)
-    ok = staleness_days <= max_staleness_days
+    policy = freshness_policy(series_id, end_date, reference_date)
+    ok = policy["ok"]
     return {
         "seriesId": series_id,
-        "ok": ok,
+        **policy,
         "reason": "fresh" if ok else "stale",
         "rows": rows,
         "end": end,
-        "stalenessDays": staleness_days,
         "file": coverage.get("file"),
-        "maxStalenessDays": max_staleness_days,
     }
 
 
@@ -171,11 +169,11 @@ def write_status(payload: dict) -> None:
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
         lines = ["## Market data refresh", "", f"Success: {payload['success']}", "",
-                 "| Dataset | Latest date | Age (days) | Limit | Health |",
-                 "| --- | --- | --- | --- | --- |"]
+                 "| Dataset | Latest date | Age (calendar days) | Limit | Holiday allowance | Health |",
+                 "| --- | --- | --- | --- | --- | --- |"]
         for task in payload["tasks"]:
             for check in task.get("outputHealth", []):
-                lines.append(f"| {check['seriesId']} | {check.get('end', '—')} | {check.get('stalenessDays', '—')} | {check['maxStalenessDays']} | {check['reason']} |")
+                lines.append(f"| {check['seriesId']} | {check.get('end', '—')} | {check.get('stalenessDays', '—')} | {check['maxStalenessDays']} | {check.get('holidayAllowanceDays', 0)} | {check['reason']} |")
         lines.extend(["", *payload.get("warnings", [])])
         Path(summary_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
