@@ -2177,3 +2177,59 @@ h3 {
     font-size: 24px;
   }
 }
+
+/* Mobile browser and embedded WebView layout. Keep page zoom available. */
+@media (max-width: 760px), (max-width: 1024px) and (max-height: 600px) and (pointer: coarse) {
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea { font-size: 16px; min-width: 0; max-width: 100%; }
+  button, select, a { touch-action: manipulation; }
+  button, select { min-height: 44px; }
+  input[type="range"] { touch-action: pan-y; }
+  .table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+}
+
+.mobile-controls-toggle { display: none; }
+@media (max-width: 760px), (max-width: 1024px) and (max-height: 600px) and (pointer: coarse) {
+  .config-panel { min-width: 0; width: 100%; }
+  .config-panel > .mobile-controls-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid currentColor; border-radius: 9px; background: transparent; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; grid-column: 1 / -1; }
+  .config-panel[data-mobile-collapsed="true"] > :not(.mobile-controls-toggle) { display: none !important; }
+  .config-panel > h2, .config-panel > .control-header { display: none; }
+  .config-panel { scroll-margin-top: 12px; }
+  .mobile-controls-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+}
+
+@media (max-width: 760px), (max-width: 1024px) and (max-height: 600px) and (pointer: coarse) {
+  .site-shell { width: 100%; padding: 10px max(10px, env(safe-area-inset-left)) 24px max(10px, env(safe-area-inset-right)); }
+  .site-shell > *, .config-grid, .config-side-grid, .control-card, .chart-shell, .chart-surface, .overview-card { min-width: 0; }
+  .config-panel, .chart-panel, .insight-panel, .detail-panel { padding: 12px; }
+  .config-panel { display: flex; flex-direction: column; gap: 10px; }
+  .section-chip-stack { display: none; }
+  .config-panel .section-head--config { margin-bottom: 0; }
+  .section-head--compact { gap: 8px; }
+  .section-copy { font-size: 13px; }
+  .overview-cards, .chart-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overview-card--range { grid-column: 1 / -1; }
+  .overview-card { padding: 10px; }
+  .overview-card__value { font-size: 20px; overflow-wrap: anywhere; }
+  .chart-shell, .chart-surface { min-height: 360px; }
+  .chart-svg { height: 360px; }
+  .timeline-zoom__head { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .dual-range { min-height: 44px; }
+  .dual-range__input::-webkit-slider-thumb { width: 26px; height: 26px; margin-top: -10px; }
+  .dual-range__input::-moz-range-thumb { width: 26px; height: 26px; }
+  .segment, .preset-button, .quick-amount, .date-picker-button { min-height: 44px; }
+  .chart-surface { touch-action: pan-y; }
+}
+@media (max-width: 760px), (max-width: 1024px) and (max-height: 600px) and (pointer: coarse) {
+  .chart-panel { display: flex; flex-direction: column; }
+  .chart-panel > .section-head { order: 0; }
+  .chart-panel > .chart-shell { order: 1; }
+  .chart-panel > .timeline-zoom { order: 2; }
+  .chart-panel > .overview-cards { order: 3; }
+  .chart-panel > .chart-summary { order: 4; }
+}
+@media (max-width: 760px), (max-width: 1024px) and (max-height: 600px) and (pointer: coarse) {
+  .chart-svg { min-height: 0; }
+  .chart-shell { padding: 8px; }
+}

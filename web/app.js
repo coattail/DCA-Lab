@@ -1705,7 +1705,7 @@ function renderChart(run) {
   const width = Math.max(dom.chartSurface.clientWidth || 980, 320);
   const compactChart = width < 720;
   const viewportHeight = Math.max(window.innerHeight || 0, 720);
-  const labelReserve = visibleAssetResults.length ? (width < 860 ? 32 : 48) : 0;
+  const labelReserve = visibleAssetResults.length ? (width < 720 ? 52 : width < 860 ? 32 : 48) : 0;
   const naturalHeight = compactChart
     ? clamp(Math.round(Math.min(width * 0.66, viewportHeight * 0.46)), 360, 520)
     : clamp(Math.round(Math.min(width * 0.52, viewportHeight * 0.56)), 460, 760);
