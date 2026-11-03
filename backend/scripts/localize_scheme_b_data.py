@@ -8,7 +8,7 @@ import re
 import subprocess
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
@@ -17,6 +17,7 @@ from typing import Optional
 import requests
 
 from data_health import validate_source_rows
+from localize_market_data import build_yahoo_price_rows, fetch_yahoo_payload
 
 try:
     import cloudscraper
@@ -38,6 +39,7 @@ CSINDEX_ENDPOINT = "https://www.csindex.com.cn/csindex-home/perf/index-perf"
 EASTMONEY_ENDPOINT = "https://push2his.eastmoney.com/api/qt/stock/kline/get"
 FRED_ENDPOINT = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 NIKKEI_DATALOAD_ENDPOINT = "https://indexes.nikkei.co.jp/en/nkave/statistics/dataload"
+NIKKEI_PRICE_DAILY_CSV = "https://indexes.nikkei.co.jp/nkave/historical/nikkei_stock_average_daily_en.csv"
 NIKKEI_NEWSROOM_ENDPOINT = "https://indexes.nikkei.co.jp/en/nkave/newsroom"
 NIKKEI_TOTAL_RETURN_DAILY_CSV = "https://indexes.nikkei.co.jp/en/nkave/historical/nikkei_225_total_return_index_daily_en.csv"
 NIKKEI_TOTAL_RETURN_MONTHLY_CSV = "https://indexes.nikkei.co.jp/en/nkave/historical/nikkei_225_total_return_index_monthly_en.csv"
@@ -262,47 +264,87 @@ def fetch_fx_history() -> tuple[list, list, str, bool]:
         return histories["usdcny"], histories["usdjpy"], "cached FX datasets after source failure", True
 
 
+def fetch_nikkei_price_daily_history() -> list[tuple[str, float]]:
+    scraper = make_nikkei_scraper()
+    response = scraper.get(NIKKEI_PRICE_DAILY_CSV, timeout=NIKKEI_REQUEST_TIMEOUT)
+    response.raise_for_status()
+    # The price CSV is Date,Close,Open,High,Low (unlike the HTML table).
+    reader = csv.reader(response.text.lstrip("\ufeff").splitlines())
+    if next(reader, None) != ["Date of Data", "Close", "Open", "High", "Low"]:
+        raise ValueError("Unexpected Nikkei price CSV header")
+    return parse_nikkei_tr_csv(response.text.lstrip("\ufeff"), close_index=1)
+
+
+def fetch_nikkei_yahoo_price_history() -> list[tuple[str, float]]:
+    rows = build_yahoo_price_rows(fetch_yahoo_payload("^N225"))
+    return [(row[0], float(row[4])) for row in rows]
+
+
+def fetch_nikkei_price() -> tuple[list[tuple[str, float]], str]:
+    existing = read_existing_csv_rows(DATA_DIR / "nikkei225.csv")
+    sources = [
+        ("Nikkei official daily price CSV", fetch_nikkei_price_daily_history),
+        ("Nikkei official historical data page", fetch_nikkei_price_history),
+        ("Yahoo Finance ^N225 price fallback", fetch_nikkei_yahoo_price_history),
+    ]
+    errors = []
+    for label, fetcher in sources:
+        try:
+            rows = validate_source_rows(fetcher(), "nikkei225_price")
+            # The official CSV starts in 2023; keep the checked-in 1979 history.
+            return merge_close_rows(existing, rows), label
+        except Exception as exc:
+            errors.append(f"{label}: {exc}")
+            print(f"Nikkei price source unavailable or unhealthy: {errors[-1]}", file=sys.stderr)
+    raise RuntimeError("; ".join(errors))
+
+
 def fetch_nikkei_price_history() -> list[tuple[str, float]]:
     today = date.today()
     target_start = date(NIKKEI_START_YEAR, NIKKEI_START_MONTH, 1)
     existing_rows = read_existing_csv_rows(DATA_DIR / "nikkei225.csv")
 
-    preserved_rows: list[tuple[str, float]] = []
     tasks: list[tuple[int, int]] = []
     if existing_rows:
         earliest_date = datetime.strptime(existing_rows[0][0], "%Y-%m-%d").date()
         latest_date = datetime.strptime(existing_rows[-1][0], "%Y-%m-%d").date()
-        head_preserve_start = earliest_date.replace(day=1)
         if earliest_date > target_start:
             for year, month in iter_months(NIKKEI_START_YEAR, NIKKEI_START_MONTH, earliest_date.year, earliest_date.month):
                 tasks.append((year, month))
-            next_year, next_month = month_shift(earliest_date.year, earliest_date.month, 1)
-            head_preserve_start = date(next_year, next_month, 1)
 
         start_year, start_month = month_shift(
             latest_date.year,
             latest_date.month,
             -(NIKKEI_INCREMENTAL_LOOKBACK_MONTHS - 1),
         )
-        refetch_start = date(start_year, start_month, 1)
-        preserved_rows = [
-            row
-            for row in existing_rows
-            if head_preserve_start.isoformat() <= row[0] < refetch_start.isoformat()
-        ]
         for year, month in iter_months(start_year, start_month, today.year, today.month):
             tasks.append((year, month))
     else:
         for year, month in iter_months(NIKKEI_START_YEAR, NIKKEI_START_MONTH, today.year, today.month):
             tasks.append((year, month))
 
-    rows = preserved_rows[:]
+    rows = []
+    errors = []
+    cached_months = {day[:7] for day, _ in existing_rows}
     with ThreadPoolExecutor(max_workers=NIKKEI_MAX_WORKERS) as executor:
-        for month_rows in executor.map(fetch_nikkei_month_history, sorted(set(tasks))):
-            rows.extend(month_rows)
+        futures = {executor.submit(fetch_nikkei_month_history, task): task for task in sorted(set(tasks))}
+        for future in as_completed(futures):
+            year, month = futures[future]
+            month_key = f"{year}-{month:02d}"
+            try:
+                month_rows = validate_source_rows(future.result(), "nikkei225_price", require_fresh=False)
+                if any(not day.startswith(month_key) for day, _ in month_rows):
+                    raise ValueError(f"Unexpected dates for Nikkei month {month_key}")
+                rows.extend(month_rows)
+            except Exception as exc:
+                if month_key not in cached_months:
+                    errors.append(f"{month_key}: {exc}")
+                print(f"Nikkei month {month_key} unavailable ({exc}); retaining cached observations if present.", file=sys.stderr)
 
-    rows.sort(key=lambda item: item[0])
-    return rows
+    if errors:
+        raise RuntimeError("Nikkei history has uncovered months: " + "; ".join(errors))
+    validate_source_rows(rows, "nikkei225_price")
+    return merge_close_rows(existing_rows, rows)
 
 
 def fetch_nikkei_month_history(task: tuple[int, int]) -> list[tuple[str, float]]:
@@ -318,11 +360,14 @@ def fetch_nikkei_month_history(task: tuple[int, int]) -> list[tuple[str, float]]
                 timeout=NIKKEI_REQUEST_TIMEOUT,
             )
             response.raise_for_status()
-            return parse_nikkei_dataload(response.text)
+            rows = parse_nikkei_dataload(response.text)
+            if not rows:
+                raise ValueError("Empty Nikkei historical table (possibly a challenge page)")
+            return rows
         except Exception as exc:  # pragma: no cover - network retry helper
             last_error = exc
 
-    raise RuntimeError(f"Failed to fetch Nikkei month {year}-{month:02d}") from last_error
+    raise RuntimeError(f"Failed to fetch Nikkei month {year}-{month:02d}: {last_error}") from last_error
 
 
 def parse_nikkei_dataload(html: str) -> list[tuple[str, float]]:
@@ -651,10 +696,17 @@ def main() -> int:
             lambda: fetch_csindex_total_return("H00300", HS300_TOTAL_RETURN_START, end_date),
         )
         usdcny, usdjpy, fx_source, fx_cached = fetch_fx_history()
+        nikkei_price_source = "cached Nikkei 225 price dataset"
+
+        def load_nikkei():
+            nonlocal nikkei_price_source
+            rows, nikkei_price_source = fetch_nikkei_price()
+            return rows
+
         nikkei_price, nikkei_price_cached = fetch_with_cache_fallback(
             "Nikkei 225 price",
             DATA_DIR / "nikkei225.csv",
-            fetch_nikkei_price_history,
+            load_nikkei,
         )
         nikkei_total_return, nikkei_total_return_cached = fetch_with_cache_fallback(
             "Nikkei 225 total return",
@@ -681,7 +733,7 @@ def main() -> int:
 
     print(f"HS300 price source: {hs300_price_source}")
     print("HS300 total return source: CSI official H00300 history")
-    print("Nikkei 225 price source: Nikkei official historical data page")
+    print(f"Nikkei 225 price source: {nikkei_price_source}")
     print(
         "Nikkei 225 total return source: Nikkei official daily CSV + monthly CSV + official monthly report anchors + "
         "pre-2012 calibrated backfill from official price history"
